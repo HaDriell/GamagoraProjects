@@ -1,5 +1,5 @@
 #include <string>
-#include <cstring>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/euler_angles.hpp>
@@ -12,9 +12,9 @@
 #include "Util.h"
 
 #include <iostream>
-const int width = 1024;
-const int height = 1024;
-const int frameCount = 60;
+const int width = 300;
+const int height = 300;
+const int frameCount = 30;
 
 
 //TODO : rework that file to fit the new version of RT
@@ -44,21 +44,29 @@ int main()
 
     //Setup Spheres (Colored)
     //*
-    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.1f, 0.1f, 0.5f});
-    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.1f, 0.1f, 0.5f});
-    scene.createSphere(glm::vec3{350, 190, 100}, 50, glm::vec3{0.2f, 0.2f, 0.5f});
-    scene.createSphere(glm::vec3{450, 450, 400}, 250, glm::vec3{0.3f, 0.3f, 0.5f});
+    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.5f, 0.5f, 1.0f});
+    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.3f, 0.3f, 0.8f});
+    scene.createSphere(glm::vec3{350, 190, 100}, 50, glm::vec3{0.5f, 0.5f, 0.9f});
+    scene.createSphere(glm::vec3{450, 450, 400}, 250, glm::vec3{0.4f, 0.3f, 0.7f});
     scene.createSphere(glm::vec3{410, 215, 180}, 20, glm::vec3{0.4f, 0.4f, 0.5f});
     scene.createSphere(glm::vec3{70, 470, 130}, 100, glm::vec3{0.5f, 0.f, 0.f});
     //*/
 
-    //Setup Triangles
-    glm::vec3 bg_quad_a = glm::vec3{0   ,    0, 1000};
-    glm::vec3 bg_quad_b = glm::vec3{1000,    0, 1000};
-    glm::vec3 bg_quad_c = glm::vec3{1000, 1000, 1000};
-    glm::vec3 bg_quad_d = glm::vec3{0   , 1000, 1000};
-    scene.createTriangle(bg_quad_c, bg_quad_b, bg_quad_a, glm::vec3{1.f, 1.f, 1.f});
-    scene.createTriangle(bg_quad_c, bg_quad_d, bg_quad_a, glm::vec3{1.f, 1.f, 1.f});
+    //Some background setup
+    float bg_dist = 2000;
+    glm::vec3 bg[8];
+    bg[0] = glm::vec3{-bg_dist, -bg_dist, -bg_dist};
+    bg[1] = glm::vec3{+bg_dist, -bg_dist, -bg_dist};
+    bg[2] = glm::vec3{-bg_dist, +bg_dist, -bg_dist};
+    bg[3] = glm::vec3{+bg_dist, +bg_dist, -bg_dist};
+    bg[4] = glm::vec3{-bg_dist, -bg_dist, +bg_dist};
+    bg[5] = glm::vec3{+bg_dist, -bg_dist, +bg_dist};
+    bg[6] = glm::vec3{-bg_dist, +bg_dist, +bg_dist};
+    bg[7] = glm::vec3{+bg_dist, +bg_dist, +bg_dist};
+
+    //TODO : investigate & test Ray x Triangle cases. Something is wrong
+
+    scene.createTriangle(bg[0], bg[1], bg[2], glm::vec3{0.6f, 0.6f, 0.9f});
 
     render(scene, framebuffer, camera);
     framebuffer.save("SandboxRender.png");
@@ -69,26 +77,19 @@ int main()
     glm::quat rotation_unit = glm::eulerAngleY(deg2rad(360.f / frameCount));
 
     std::cout << "Rendering " << frameCount << " Frames." << std::endl;
-    Framebuffer** frames = new Framebuffer*[frameCount];
     for (int i = 0; i < frameCount; i++)
     {
         std::cout << "Frame " << i << "/" << frameCount << " ";
-        frames[i] = new Framebuffer(1024, 1024);
+        framebuffer.clear();
         //Always look at the point of interest
         camera.position = glm::rotate(rotation_unit, camera.position);
         //Extra Weird. probably me not watching the right direction (I'm watching behind me lol)
         camera.orientation = glm::quatLookAt(glm::normalize(camera.position - pointOfInterest), glm::vec3{0, 1, 0});
-        render(scene, *frames[i], camera);
+
+        render(scene, framebuffer, camera);
+        framebuffer.save("Frame_" + to_string(i) + ".png");
 
         std::cout << "OK" << std::endl;
     }
     std::cout << "Render done. Saving" << std::endl;
-
-    //Saving the frames
-    for (int i = 0; i < frameCount; i++)
-    {
-        char num[3];
-        sprintf(num, "%2d", i);
-        frames[i]->save("Frame_" + std::string(num) + ".png");
-    }
 }
