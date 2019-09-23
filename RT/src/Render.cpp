@@ -24,7 +24,9 @@ glm::vec3 getPointLightDirectIllumination(const Scene& scene, const glm::vec3& p
             {
                 float lightDistanceFactor = 1.f / lightDistance2;
                 float hitAngleFactor = glm::dot(normal, glm::normalize(htl));
-                color += light->color * (lightDistanceFactor * hitAngleFactor * light->intensity);
+                float intensity = lightDistanceFactor * hitAngleFactor * light->intensity;
+                if (intensity < 0) intensity = 0;
+                color += light->color * intensity;
             }
         }
     }
