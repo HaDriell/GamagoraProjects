@@ -2,6 +2,19 @@
 #include "Util.h"
 #include <FreeImage.h>
 
+
+Framebuffer::Framebuffer(unsigned int width, unsigned int height) : width(width), height(height) 
+{
+    pixel = new Pixel[width * height];
+    clear();
+}
+
+Framebuffer::~Framebuffer()
+{
+    delete[] pixel;
+}
+
+
 void Framebuffer::save(std::string filename)
 {
     FreeImage_Initialise();
@@ -11,10 +24,10 @@ void Framebuffer::save(std::string filename)
     {
         for (int i = 0; i < width; i++)
         {
-            glm::vec3& pixel = data[i + j * width];
-            color.rgbRed        = lerp(0, 255, clamp(0, 1, pixel.x));
-            color.rgbGreen      = lerp(0, 255, clamp(0, 1, pixel.y));
-            color.rgbBlue       = lerp(0, 255, clamp(0, 1, pixel.z));
+            glm::vec3& p = pixel[i + j * width].color;
+            color.rgbRed        = lerp(0, 255, clamp(0, 1, p.x));
+            color.rgbGreen      = lerp(0, 255, clamp(0, 1, p.y));
+            color.rgbBlue       = lerp(0, 255, clamp(0, 1, p.z));
             color.rgbReserved   = 255;
             FreeImage_SetPixelColor(bitmap, i, j, &color);
         }
@@ -23,9 +36,22 @@ void Framebuffer::save(std::string filename)
 //    FreeImage_DeInitialise();
 }
 
-void Framebuffer::set(unsigned int x, unsigned int y, const glm::vec3& color)
+
+
+void Framebuffer::clear()
+{
+    for (int i = 0; i < width * height; i++)
+    {
+        pixel[i].color = glm::vec3{0.f, 0.f, 0.f};
+        pixel[i].depth = std::numeric_limits<float>::max();
+    }
+}
+
+void Framebuffer::write(unsigned int x, unsigned int y, const glm::vec3& color, float depth)
 {
     if (x >= width) return;
     if (y >= height) return;
-    data[x + y * width] = color;
+    if (depth > pixel[x + y * width].depth) return;
+    pixel[x + y * width].color = color;
+    pixel[x + y * width].depth = depth;
 }

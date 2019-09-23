@@ -3,23 +3,23 @@
 #include <glm/glm.hpp>
 #include <string>
 
+struct Pixel {
+    glm::vec3 color;
+    float depth;
+};
+
 struct Framebuffer
 {
     const unsigned int width;
     const unsigned int height;
-    glm::vec3* data;
+    Pixel* pixel;
 
-    Framebuffer(unsigned int width, unsigned int height) : width(width), height(height) 
-    {
-        data = new glm::vec3[width * height];
-    }
+    Framebuffer(unsigned int width, unsigned int height);
+    ~Framebuffer();
 
-    ~Framebuffer()
-    {
-        delete[] data;
-    }
+    void clear();
 
-    void set(unsigned int x, unsigned int y, const glm::vec3& color);
+    void write(unsigned int x, unsigned int y, const glm::vec3& color, float depth);
 
     void save(std::string filename);
 };

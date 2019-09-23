@@ -52,6 +52,14 @@ int main()
     scene.createSphere(glm::vec3{70, 470, 130}, 100, glm::vec3{0.5f, 0.f, 0.f});
     //*/
 
+    //Setup Triangles
+    glm::vec3 bg_quad_a = glm::vec3{0   ,    0, 1000};
+    glm::vec3 bg_quad_b = glm::vec3{1000,    0, 1000};
+    glm::vec3 bg_quad_c = glm::vec3{1000, 1000, 1000};
+    glm::vec3 bg_quad_d = glm::vec3{0   , 1000, 1000};
+    scene.createTriangle(bg_quad_c, bg_quad_b, bg_quad_a, glm::vec3{1.f, 1.f, 1.f});
+    scene.createTriangle(bg_quad_c, bg_quad_d, bg_quad_a, glm::vec3{1.f, 1.f, 1.f});
+
     render(scene, framebuffer, camera);
     framebuffer.save("SandboxRender.png");
 

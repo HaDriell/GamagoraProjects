@@ -62,19 +62,6 @@ bool intersect(const Ray& ray, const Triangle& triangle, float& t)
     return true;
 }
 
-
-bool intersectAny(const Ray& ray, const std::vector<Sphere*> spheres)
-{
-    for (auto& spherePtr : spheres)
-    {
-        float dt;
-        if (intersect(ray, *spherePtr, dt))
-            return true;
-    }
-    return false;
-}
-
-
 bool intersectNearest(const Ray& ray, const std::vector<Sphere*>& spheres, float& t, Sphere& sphere)
 {
     bool hit = false;
@@ -85,6 +72,22 @@ bool intersectNearest(const Ray& ray, const std::vector<Sphere*>& spheres, float
         {
             t = dt;
             sphere = *spherePtr;
+            hit = true;
+        }
+    }
+    return hit;
+}
+
+bool intersectNearest(const Ray& ray, const std::vector<Triangle*>& triangles, float& t, Triangle& triangle)
+{
+    bool hit = false;
+    for (auto& trianglePtr : triangles)
+    {
+        float dt;
+        if (intersect(ray, *trianglePtr, dt) && (!hit || dt < t))
+        {
+            t = dt;
+            triangle = *trianglePtr;
             hit = true;
         }
     }

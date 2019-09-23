@@ -7,4 +7,4 @@
 #include "Camera.h"
 
 
-void render(const Scene& scene, const Framebuffer& framebuffer, const Camera& camera);
+void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera);

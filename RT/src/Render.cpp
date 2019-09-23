@@ -6,7 +6,7 @@
 
 glm::vec3 getPointLightDirectIllumination(const Scene& scene, const glm::vec3& point, const glm::vec3& normal)
 {
-    glm::vec3 color = {0.f, 0.f, 0.f};
+    glm::vec3 color = glm::vec3{0.f, 0.f, 0.f};
     for (auto& light : scene.pointLights)
     {
         glm::vec3 htl = light->position - point;
@@ -15,8 +15,11 @@ glm::vec3 getPointLightDirectIllumination(const Scene& scene, const glm::vec3& p
         ray.direction = glm::normalize(-htl);
 
         float t;
-        Sphere s;
-        if (intersectNearest(ray, scene.spheres, t, s))
+        Sphere sphere;
+        Triangle triangle;
+
+        //Ray x Sphere
+        if (intersectNearest(ray, scene.spheres, t, sphere))
         {
             float lightDistance2 = glm::dot(htl, htl);
 
@@ -26,14 +29,29 @@ glm::vec3 getPointLightDirectIllumination(const Scene& scene, const glm::vec3& p
                 float hitAngleFactor = glm::dot(normal, glm::normalize(htl));
                 float intensity = lightDistanceFactor * hitAngleFactor * light->intensity;
                 if (intensity < 0) intensity = 0;
-                color += light->color * intensity;
+                color = sphere.color * (light->color * intensity);
+            }
+        }
+
+        //Ray x Triangle
+        if (intersectNearest(ray, scene.triangles, t, triangle))
+        {
+            float lightDistance2 = glm::dot(htl, htl);
+
+            if (lightDistance2 >= (t * t) - 15)
+            {
+                float lightDistanceFactor = 1.f / lightDistance2;
+                float hitAngleFactor = glm::dot(normal, glm::normalize(htl));
+                float intensity = lightDistanceFactor * hitAngleFactor * light->intensity;
+                if (intensity < 0) intensity = 0;
+                color = triangle.color * (light->color * intensity);
             }
         }
     }
     return color;
 }
 
-void render(const Scene& scene, const Framebuffer& framebuffer, const Camera& camera)
+void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera)
 {
     glm::mat3 rotation = glm::toMat3(camera.orientation);
     glm::vec3 u = rotation * glm::vec3{1.f, 0.f, 0.f}; // camera's X unit vector
@@ -67,17 +85,31 @@ void render(const Scene& scene, const Framebuffer& framebuffer, const Camera& ca
             ray.position = camera.position;
             ray.direction = glm::normalize(target - camera.position);
 
+            //Try to hit any primitive
+            float t;
             Sphere sphere;
-            float t = 0.f;
+            Triangle triangle;
+            glm::vec3 color = glm::vec3{0.f, 0.f, 0.f};
+
+            //Ray x Sphere
             if (intersectNearest(ray, scene.spheres, t, sphere))
             {
                 glm::vec3 hitPoint = ray.position + ray.direction * t;
                 glm::vec3 normal = glm::normalize(hitPoint - sphere.position);
-                glm::vec3 color = getPointLightDirectIllumination(scene, hitPoint, normal);
-                framebuffer.data[i + j * framebuffer.width] = sphere.color * color;
-            } else {
-                framebuffer.data[i + j * framebuffer.width] = glm::vec3{0, 0, 0};
+                color = getPointLightDirectIllumination(scene, hitPoint, normal);
             }
+
+            //Ray x Triangle
+            if (intersectNearest(ray, scene.triangles, t, triangle))
+            {
+                glm::vec3 hitPoint = ray.position + ray.direction * t;
+                glm::vec3 v0v1 = triangle.v1 - triangle.v0;
+                glm::vec3 v0v2 = triangle.v2 - triangle.v0;
+                glm::vec3 normal = glm::normalize(glm::cross(v0v1, v0v2));
+                color = getPointLightDirectIllumination(scene, hitPoint, normal);
+            }
+            
+            framebuffer.write(i, j, color, t);
         }
     }
 }
