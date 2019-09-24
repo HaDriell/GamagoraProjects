@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <string>
 
 const float PI = 3.14159265359f;

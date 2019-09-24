@@ -12,9 +12,9 @@
 #include "Util.h"
 
 #include <iostream>
-const int width = 300;
-const int height = 300;
-const int frameCount = 30;
+const int width = 500;
+const int height = 500;
+const int frameCount = 60;
 
 
 //TODO : rework that file to fit the new version of RT
@@ -24,70 +24,49 @@ int main()
 {
     Framebuffer framebuffer = Framebuffer(width, height);
 
+    Scene scene;
+    scene.vl_sample_count = 100;
+
+    //Debug Light
+    scene.createPointLight(glm::vec3{0, 900, 0}, 1e5, glm::vec3{1.f, 1.f, 1.f});
+    scene.createCubeLight(glm::vec3{0, -200, -400}, 100, 8e4, glm::vec3{1.f, 1.f, 1.f});
+
+    //Small Sphere at origin
+    scene.createSphere(glm::vec3{0, 0, 0}       , 10, glm::vec3{1.f, 0.6f, 0.6f});
+    scene.createSphere(glm::vec3{-100, 100, 0} , 60, glm::vec3{0.3f, 1.0f, 0.9f});
+    scene.createSphere(glm::vec3{+100, 0, 100}  , 60, glm::vec3{0.8f, 0.8f, 1.0f});
+
+    //Floor
+    scene.createSphere(glm::vec3{0, -1e5, 0}, 1e5 - 300, glm::vec3{0.5f, 0.5f, 0.5f});
+
     Camera camera;
-    camera.position = glm::vec3{512, 512, -1024};
-    camera.orientation = glm::eulerAngleXYX(0.f, 0.f, 0.f);
+    camera.position = glm::vec3{0, 0, -500};
+    camera.orientation = glm::quatLookAt(glm::normalize(camera.position - glm::vec3{0.f, 0.f, 0.f}), glm::vec3{0, 1, 0});
     camera.fov = 60.f;
 
     std::cout << glm::to_string(camera.orientation) << std::endl;
-
-    Scene scene;
-
-    //Setup Lights
-    //*
-    scene.createPointLight(glm::vec3{0, -500, -300}, 1e6, glm::vec3{0.1f, 0.8f, 0.1f});
-    scene.createPointLight(glm::vec3{1000, -500, -300}, 1e6, glm::vec3{0.9f, 0.1f, 0.1f});
-    scene.createPointLight(glm::vec3{1000, 300, 300}, 1e6, glm::vec3{0.1f, 0.1f, 0.9f});
-    scene.createPointLight(glm::vec3{300, -600, 300}, 1e6, glm::vec3{1.0f, 1.0f, 1.0f});
-    scene.createPointLight(glm::vec3{300, 700, 300}, 1e6, glm::vec3{1.0f, 1.0f, 1.0f});
-    //*/
-
-    //Setup Spheres (Colored)
-    //*
-    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.5f, 0.5f, 1.0f});
-    scene.createSphere(glm::vec3{280, 280, 200}, 110, glm::vec3{0.3f, 0.3f, 0.8f});
-    scene.createSphere(glm::vec3{350, 190, 100}, 50, glm::vec3{0.5f, 0.5f, 0.9f});
-    scene.createSphere(glm::vec3{450, 450, 400}, 250, glm::vec3{0.4f, 0.3f, 0.7f});
-    scene.createSphere(glm::vec3{410, 215, 180}, 20, glm::vec3{0.4f, 0.4f, 0.5f});
-    scene.createSphere(glm::vec3{70, 470, 130}, 100, glm::vec3{0.5f, 0.f, 0.f});
-    //*/
-
-    //Some background setup
-    float bg_dist = 2000;
-    glm::vec3 bg[8];
-    bg[0] = glm::vec3{-bg_dist, -bg_dist, -bg_dist};
-    bg[1] = glm::vec3{+bg_dist, -bg_dist, -bg_dist};
-    bg[2] = glm::vec3{-bg_dist, +bg_dist, -bg_dist};
-    bg[3] = glm::vec3{+bg_dist, +bg_dist, -bg_dist};
-    bg[4] = glm::vec3{-bg_dist, -bg_dist, +bg_dist};
-    bg[5] = glm::vec3{+bg_dist, -bg_dist, +bg_dist};
-    bg[6] = glm::vec3{-bg_dist, +bg_dist, +bg_dist};
-    bg[7] = glm::vec3{+bg_dist, +bg_dist, +bg_dist};
-
-    //TODO : investigate & test Ray x Triangle cases. Something is wrong
-
-    scene.createTriangle(bg[0], bg[1], bg[2], glm::vec3{0.6f, 0.6f, 0.9f});
 
     render(scene, framebuffer, camera);
     framebuffer.save("SandboxRender.png");
 
 
     //Rendering GIF
-    glm::vec3 pointOfInterest = scene.spheres[1]->position;
+    glm::vec3 pointOfInterest = {0.f, 0.f, 0.f};
     glm::quat rotation_unit = glm::eulerAngleY(deg2rad(360.f / frameCount));
 
     std::cout << "Rendering " << frameCount << " Frames." << std::endl;
     for (int i = 0; i < frameCount; i++)
     {
         std::cout << "Frame " << i << "/" << frameCount << " ";
-        framebuffer.clear();
+        Framebuffer fb = Framebuffer(width, height);
+
         //Always look at the point of interest
         camera.position = glm::rotate(rotation_unit, camera.position);
         //Extra Weird. probably me not watching the right direction (I'm watching behind me lol)
         camera.orientation = glm::quatLookAt(glm::normalize(camera.position - pointOfInterest), glm::vec3{0, 1, 0});
 
-        render(scene, framebuffer, camera);
-        framebuffer.save("Frame_" + to_string(i) + ".png");
+        render(scene, fb, camera);
+        fb.save("Frame_" + to_string(i) + ".png");
 
         std::cout << "OK" << std::endl;
     }

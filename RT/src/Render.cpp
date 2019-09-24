@@ -1,62 +1,69 @@
 #include "Render.h"
 #include "Util.h"
 
+#include <random>
 #include <limits>
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
-glm::vec3 getPointLightDirectIllumination(const Scene& scene, const glm::vec3& point, const glm::vec3& normal)
+glm::vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, const glm::vec3& hitPoint, const glm::vec3& normal)
 {
-    glm::vec3 color = glm::vec3{0.f, 0.f, 0.f};
-    for (auto& light : scene.pointLights)
+    glm::vec3 htl = glm::normalize(light.position - hitPoint);
+    float lightDistance2 = glm::distance2(light.position, hitPoint);
+
+    Ray ray;
+    ray.position = light.position;
+    ray.direction = -htl;
+
+    //Sphere intersection data
+    float tSphere = std::numeric_limits<float>::max();
+    Sphere sphere;
+    bool hitSphere = intersectNearest(ray, scene.spheres, tSphere, sphere);
+
+    //Triangle intersection data
+    float tTriangle = std::numeric_limits<float>::max();
+    Triangle triangle;
+    bool hitTriangle = intersectNearest(ray, scene.triangles, tTriangle, triangle);
+
+    //Merge the results
+    if (hitSphere || hitTriangle)
     {
-        glm::vec3 htl = glm::normalize(light->position - point);
-        float lightDistance2 = glm::distance2(light->position, point);
-
-        Ray ray;
-        ray.position = light->position;
-        ray.direction = -htl;
-
-        //Sphere intersection data
-        float tSphere = std::numeric_limits<float>::max();
-        Sphere sphere;
-        bool hitSphere = intersectNearest(ray, scene.spheres, tSphere, sphere);
-
-        //Triangle intersection data
-        float tTriangle = std::numeric_limits<float>::max();
-        Triangle triangle;
-        bool hitTriangle = intersectNearest(ray, scene.triangles, tTriangle, triangle);
-
-
-        //Merge the results
-
-        //Sphere is nearer
-        if (hitSphere && tSphere < tTriangle)
+        float t = std::min(tTriangle, tSphere);
+        if (std::abs(1 - t * t / lightDistance2) < 0.0001f)
         {
-            if (lightDistance2 >= (tSphere * tSphere) - 15)
-            {
                 float lightDistanceFactor = 1.f / lightDistance2;
                 float hitAngleFactor = glm::dot(normal, htl);
-                float intensity = lightDistanceFactor * hitAngleFactor * light->intensity;
+                float intensity = lightDistanceFactor * hitAngleFactor * light.intensity;
                 if (intensity < 0) intensity = 0;
-                color += sphere.color * (light->color * intensity);
-            }
-        }
-        
-        //Triangle is nearer
-        if (hitTriangle && tTriangle < tSphere)
-        {
-            if (lightDistance2 >= (tTriangle * tTriangle) - 15)
-            {
-                float lightDistanceFactor = 1.f / lightDistance2;
-                float hitAngleFactor = glm::dot(normal, htl);
-                float intensity = lightDistanceFactor * hitAngleFactor * light->intensity;
-                if (intensity < 0) intensity = 0;
-                color += triangle.color * (light->color * intensity);
-            }
+                return (light.color * intensity);
         }
     }
-    return color;
+    //Return background color (black)
+    return glm::vec3{0.f, 0.f, 0.f};
+}
+
+glm::vec3 get_light_illumination(const Scene& scene, const glm::vec3& hitPoint, const glm::vec3& normal)
+{
+    glm::vec3 illumination = glm::vec3{0.f, 0.f, 0.f};
+    for (auto& light : scene.pointLights)
+    {
+        illumination += get_point_light_illumination(scene, *light, hitPoint, normal);
+    }
+
+    for (auto& light : scene.cubeLights)
+    {
+        float delta = light->size / 2;
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<> dist(-delta, +delta);
+        for (int i = 0; i < scene.vl_sample_count; i++)
+        {
+            glm::vec3 position = glm::vec3{dist(mt), dist(mt), dist(mt)} + light->position;
+            PointLight pointLight = PointLight{position, light->intensity / scene.vl_sample_count, light->color};
+            illumination += get_point_light_illumination(scene, pointLight, hitPoint, normal);
+        }
+    }
+    return illumination;
 }
 
 void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera)
@@ -108,7 +115,7 @@ void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera)
             {
                 glm::vec3 hitPoint = ray.position + ray.direction * tSphere;
                 glm::vec3 normal = glm::normalize(hitPoint - sphere.position);
-                glm::vec3 color = getPointLightDirectIllumination(scene, hitPoint, normal);
+                glm::vec3 color = sphere.color * get_light_illumination(scene, hitPoint, normal);
                 framebuffer.write(i, j, color, tSphere);
             }
 
@@ -119,7 +126,7 @@ void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera)
                 glm::vec3 v0v1 = triangle.v1 - triangle.v0;
                 glm::vec3 v0v2 = triangle.v2 - triangle.v0;
                 glm::vec3 normal = glm::normalize(glm::cross(v0v1, v0v2));
-                glm::vec3 color = getPointLightDirectIllumination(scene, hitPoint, normal);
+                glm::vec3 color = triangle.color * get_light_illumination(scene, hitPoint, normal);
                 framebuffer.write(i, j, color, tTriangle);
             }
         }

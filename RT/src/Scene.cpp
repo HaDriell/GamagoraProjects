@@ -5,6 +5,11 @@ void Scene::createPointLight(const glm::vec3& position, float intensity, const g
     pointLights.push_back(new PointLight{position, intensity, color});
 }
 
+void Scene::createCubeLight(const glm::vec3& position, float size, float intensity, const glm::vec3& color)
+{
+    cubeLights.push_back(new CubeLight{position, size, intensity, color});
+}
+
 void Scene::createSphere(const glm::vec3& position, float radius, const glm::vec3& color)
 {
     spheres.push_back(new Sphere{position, radius, color});
@@ -22,6 +27,12 @@ Scene::~Scene()
         delete instance;
     }
     pointLights.clear();
+
+    for (auto&& instance : cubeLights)
+    {
+        delete instance;
+    }
+    cubeLights.clear();
 
     for(auto&& instance : spheres)
     {

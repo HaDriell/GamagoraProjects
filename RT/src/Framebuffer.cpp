@@ -1,7 +1,7 @@
 #include "Framebuffer.h"
 #include "Util.h"
 #include <FreeImage.h>
-
+#include <math.h>
 
 Framebuffer::Framebuffer(unsigned int width, unsigned int height) : width(width), height(height) 
 {
@@ -24,10 +24,19 @@ void Framebuffer::save(std::string filename)
     {
         for (int i = 0; i < width; i++)
         {
-            glm::vec3& p = pixel[i + j * width].color;
-            color.rgbRed        = lerp(0, 255, clamp(0, 1, p.x));
-            color.rgbGreen      = lerp(0, 255, clamp(0, 1, p.y));
-            color.rgbBlue       = lerp(0, 255, clamp(0, 1, p.z));
+            glm::vec3 p = pixel[i + j * width].color;
+            //Clamp values
+            p.x = clamp(0, 1, p.x);
+            p.y = clamp(0, 1, p.y);
+            p.z = clamp(0, 1, p.z);
+            //Attenuate
+            p.x = std::pow(p.x, 1 / 2.2f);
+            p.y = std::pow(p.y, 1 / 2.2f);
+            p.z = std::pow(p.z, 1 / 2.2f);
+            //Write to bitmap
+            color.rgbRed        = lerp(0, 255, p.x);
+            color.rgbGreen      = lerp(0, 255, p.y);
+            color.rgbBlue       = lerp(0, 255, p.z);
             color.rgbReserved   = 255;
             FreeImage_SetPixelColor(bitmap, i, j, &color);
         }
