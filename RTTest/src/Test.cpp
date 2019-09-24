@@ -3,9 +3,10 @@
 #include <vector>
 #include <glm/gtx/string_cast.hpp>
 
- #include "Ray.h"
- #include "models/Sphere.h"
- #include "Intersect.h"
+#include "models/Mesh.h"
+#include "Ray.h"
+#include "models/Sphere.h"
+#include "Intersect.h"
 
 const float E = 0.00001f;
 
@@ -14,6 +15,12 @@ bool about_equal(float value, float target, float epsilon = E)
     return target - epsilon <= value && value <= target + epsilon;
 }
 
+//Testing obj loading
+void should_load_obj_file()
+{
+    std::vector<Mesh*> meshes;
+    load_mesh_obj("cube.obj", meshes);
+}
 
 // Testing Raycasting
 void should_intersect_sphere()
@@ -87,10 +94,69 @@ void should_intersect_nearest_sphere()
     assert(about_equal(s.position.z, 10));
 }
 
+void should_intersect_triangle()
+{
+    Ray r;
+    r.position = glm::vec3();
+    r.direction = glm::vec3{0, 0, 1};
+
+    Triangle triangle;
+    triangle.v0 = glm::vec3{-1, -1, 1};
+    triangle.v1 = glm::vec3{+1, -1, 1};
+    triangle.v2 = glm::vec3{ 0,  1, 1};
+
+    float t;
+
+    assert(intersect(r, triangle, t));
+    assert(about_equal(t, 1));
+}
+
+
+void should_not_intersect_triangle_left()
+{
+    Ray r;
+    r.position = glm::vec3(-1, 0, 0);
+    r.direction = glm::vec3{0, 0, 1};
+
+    Triangle triangle;
+    triangle.v0 = glm::vec3{-1, -1, 1};
+    triangle.v1 = glm::vec3{+1, -1, 1};
+    triangle.v2 = glm::vec3{ 0,  1, 1};
+
+    float t;
+
+    assert(!intersect(r, triangle, t));
+}
+
+void should_not_intersect_triangle_right()
+{
+    Ray r;
+    r.position = glm::vec3(+1, 0, 0);
+    r.direction = glm::vec3{0, 0, 1};
+
+    Triangle triangle;
+    triangle.v0 = glm::vec3{-1, -1, 1};
+    triangle.v1 = glm::vec3{+1, -1, 1};
+    triangle.v2 = glm::vec3{ 0,  1, 1};
+
+    float t;
+
+    assert(!intersect(r, triangle, t));
+}
+
 int main()
 {
+    //Sphere tests
     should_intersect_sphere();
     should_intersect_sphere_from_inside();
     should_not_intersect_sphere();
     should_intersect_nearest_sphere();
+
+    //Triangle tests
+    should_intersect_triangle();
+    should_not_intersect_triangle_left();
+    should_not_intersect_triangle_right();
+
+    //OBJ file test
+    should_load_obj_file();
 }

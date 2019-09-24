@@ -37,29 +37,33 @@ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 
 bool intersect(const Ray& ray, const Triangle& triangle, float& t)
 {
+    //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
     //compute plane's normal
-    glm::vec3 v0v1 = triangle.v1 - triangle.v0;
-    glm::vec3 v0v2 = triangle.v2 - triangle.v0;
-    glm::vec3 pvec = glm::cross(ray.direction, v0v2);
-    float det = glm::dot(pvec, v0v1);
+    const float epsilon = 1e-8;
 
-    if (-1e-8 < det && det < 1e-8) // det ~= 0
+    glm::vec3 edge1 = triangle.v1 - triangle.v0;
+    glm::vec3 edge2 = triangle.v2 - triangle.v0;
+
+    glm::vec3 h = glm::cross(ray.direction, edge2);
+    float a = glm::dot(edge1, h);
+
+    if (std::abs(a) < epsilon)
         return false;
 
-    float invDet = 1 / det;
+    float f = 1.f / a;
 
-    glm::vec3 tvec = ray.position - triangle.v0;
-    float u = glm::dot(tvec, pvec) * invDet;
-    if  (u < 0 || u > 1)
+    glm::vec3 s = ray.position - triangle.v0;
+    float u = f * glm::dot(s, h);
+    if  (u < 0.f || u > 1.f)
         return false;
 
-    glm::vec3 qvec = glm::cross(tvec, v0v1);
-    float v = glm::dot(ray.direction, qvec) * invDet;
-    if (v < 0 || u + v > 1)
+    glm::vec3 q = glm::cross(s, edge1);
+    float v = f * glm::dot(ray.direction, q);
+    if (v < 0.f || u + v > 1.f)
         return false;
-
-    t = glm::dot(v0v2, qvec) * invDet;
-    return true;
+    
+    t = f * glm::dot(edge2, q);
+    return t > epsilon;
 }
 
 bool intersectNearest(const Ray& ray, const std::vector<Sphere*>& spheres, float& t, Sphere& sphere)
