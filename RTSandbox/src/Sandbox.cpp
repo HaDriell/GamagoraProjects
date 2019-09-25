@@ -14,16 +14,84 @@
 #include "Util.h"
 
 #include <iostream>
-const int width = 500;
-const int height = 500;
-const int frameCount = 60;
+const int width = 512;
+const int height = 512;
+const int frameCount = 360;
+const int bl_sample_count = 200;
+
+void load_into_scene(Scene& scene, const Mesh& mesh, glm::vec3 color = glm::vec3{1.f, 1.f, 1.f}, glm::vec3 position = glm::vec3(), glm::quat orientation = glm::quat(), glm::vec3 scale = glm::vec3{1.f, 1.f, 1.f})
+{
+    std::cout << "Adding Mesh to Scene " << std::endl;
+    for (auto& vertex : mesh.vertices)
+    {
+        glm::vec3 a = mesh.positions[vertex.v0 - 1]; a *= scale; a = orientation * a; a += position;
+        glm::vec3 b = mesh.positions[vertex.v1 - 1]; b *= scale; b = orientation * b; b += position;
+        glm::vec3 c = mesh.positions[vertex.v2 - 1]; c *= scale; c = orientation * c; c += position;
+        std::cout << "Triangle " << glm::to_string(a) << " " << glm::to_string(b) << " " << glm::to_string(c) << std::endl;
+        scene.createTriangle(a, b, c, color);
+    }
+}
+
+void render_love()
+{
+    Mesh love;
+    love.load_obj("Love.obj");
+
+    Mesh cube;
+    cube.load_obj("cube.obj");
+
+    Scene scene;
+    scene.bl_sample_count = bl_sample_count;
+    
+    //Objects
+    //Floor
+    scene.createSphere(glm::vec3{0, -1e5, 0}, 1e5 - 300, glm::vec3{0.5f, 0.5f, 0.5f});
+    //Love
+    load_into_scene(scene, 
+                    love, 
+        /*color*/   glm::vec3{0.95f, 0.05f, 0.05f},
+        /*position*/glm::vec3(),
+        /*rotation*/glm::quat(), 
+        /*scale*/   glm::vec3{4.f, 4.f, 4.f});
+
+    //Light
+    scene.createCubeLight(glm::vec3{0, 2000, 0}, 200, 2e6, glm::vec3{1.f, 1.f, 1.f});
+
+    Camera camera;
+    camera.position = glm::vec3{0, 350, -500};
+    camera.fov = 60.f;
+
+    Framebuffer framebuffer = Framebuffer(width, height);
+    int frameCount = 60;
+    glm::quat orbit_rotation = glm::eulerAngleY(360.f / frameCount);
+    for (int i = 0; i < frameCount; i++)
+    {
+        std::cout << "Frame " << i << "/" << frameCount << " ";
+
+        //rotate around orbit
+        camera.position = orbit_rotation * camera.position;
+
+        //Always look at the point of interest
+        camera.orientation = glm::quatLookAt(glm::normalize(camera.position), glm::vec3{0, 1, 0});
+
+        //Render to the framebuffer
+        framebuffer.clear();
+        render(scene, framebuffer, camera);
+        framebuffer.save("Frame_" + to_string(i) + ".png");
+        std::cout << "OK" << std::endl;
+    }
+}
 
 int main()
 {
+    render_love();
+    std::cin.get(); // prevent auto exit
+    return 0;
+
     Framebuffer framebuffer = Framebuffer(width, height);
 
     Scene scene;
-    scene.vl_sample_count = 100;
+    scene.bl_sample_count = bl_sample_count;
 
     //Debug Light
     scene.createPointLight(glm::vec3{0, 900, 0}, 1e5, glm::vec3{1.f, 1.f, 1.f});
@@ -38,27 +106,11 @@ int main()
     //Floor
     scene.createSphere(glm::vec3{0, -1e5, 0}, 1e5 - 300, glm::vec3{0.5f, 0.5f, 0.5f});
 
-    //Mesh (raw triangles for now)
-    std::vector<Mesh*> meshes;
-    load_mesh_obj("cube.obj", meshes); //load meshes
-    // add meshes to the scene as raw triangles
-    for(auto& mesh : meshes)
-    {
-        for (auto& face : mesh->faces)
-        {
-            int i0 = face.v[0] - 1;
-            int i1 = face.v[1] - 1;
-            int i2 = face.v[2] - 1;
-            std::cout << "Face " << i0 << " " << i1 << " " << i2 << std::endl;
+    Mesh mesh;
+    mesh.load_obj("cube.obj");
 
-            glm::vec3 v0 = mesh->vertices[i0] * 30.f;
-            glm::vec3 v1 = mesh->vertices[i1] * 30.f;
-            glm::vec3 v2 = mesh->vertices[i2] * 30.f;
-            scene.createTriangle(v0, v1, v2, glm::vec3{1.f, 1.f, 1.f});
-        }
-        delete mesh;
-    }
-    meshes.clear();
+    //Add a new Mesh instance in the scene
+    load_into_scene(scene, mesh, glm::vec3(), glm::vec3{1.f, 1.f, 1.f}, glm::quat(), glm::vec3{40.f, 40.f, 40.f});
 
     Camera camera;
     camera.position = glm::vec3{0, 0, -500};

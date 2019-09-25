@@ -12,7 +12,7 @@ struct Scene
     //Light models
     std::vector<PointLight*> pointLights;
     std::vector<CubeLight*> cubeLights;
-    unsigned int vl_sample_count = 4;
+    unsigned int bl_sample_count = 4;
 
     //Sphere models
     std::vector<Sphere*> spheres;

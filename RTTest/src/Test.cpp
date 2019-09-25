@@ -16,10 +16,10 @@ bool about_equal(float value, float target, float epsilon = E)
 }
 
 //Testing obj loading
-void should_load_obj_file()
+void should_load_mesh()
 {
-    std::vector<Mesh*> meshes;
-    load_mesh_obj("cube.obj", meshes);
+    Mesh mesh;
+    mesh.load_obj("cube.obj");
 }
 
 // Testing Raycasting
@@ -158,5 +158,5 @@ int main()
     should_not_intersect_triangle_right();
 
     //OBJ file test
-    should_load_obj_file();
+    should_load_mesh();
 }

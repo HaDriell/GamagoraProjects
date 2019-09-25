@@ -1,6 +1,6 @@
 workspace "TP"
     configurations { "Debug", "Release" }
-    
+
     filter { "configurations:Debug" }
         symbols "On"
     filter {}
@@ -66,6 +66,9 @@ workspace "TP"
         links {
             "freeimage"
         }
+        buildoptions { "-fopenmp" }
+        linkoptions { "-fopenmp" }
+
     -- RTTest, unit testing of RT
     project "RTTest"
         location "%{prj.name}"
@@ -107,3 +110,4 @@ workspace "TP"
             "RT",
             "freeimage"
         }
+        linkoptions { "-fopenmp" }

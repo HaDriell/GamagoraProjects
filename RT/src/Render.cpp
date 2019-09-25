@@ -1,6 +1,8 @@
 #include "Render.h"
 #include "Util.h"
 
+#include <omp.h>
+
 #include <random>
 #include <limits>
 #include <iostream>
@@ -56,10 +58,10 @@ glm::vec3 get_light_illumination(const Scene& scene, const glm::vec3& hitPoint, 
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> dist(-delta, +delta);
-        for (int i = 0; i < scene.vl_sample_count; i++)
+        for (int i = 0; i < scene.bl_sample_count; i++)
         {
             glm::vec3 position = glm::vec3{dist(mt), dist(mt), dist(mt)} + light->position;
-            PointLight pointLight = PointLight{position, light->intensity / scene.vl_sample_count, light->color};
+            PointLight pointLight = PointLight{position, light->intensity / scene.bl_sample_count, light->color};
             illumination += get_point_light_illumination(scene, pointLight, hitPoint, normal);
         }
     }
@@ -85,6 +87,7 @@ void render(const Scene& scene, Framebuffer& framebuffer, const Camera& camera)
     std::cout << "FocalDistance: " << focalDistance << std::endl;
 
     //Camera's forward is the Z axis
+    #pragma omp parallel for
     for (int j = 0; j < framebuffer.height; j++)
     {
         for (int i = 0; i < framebuffer.width; i++)
