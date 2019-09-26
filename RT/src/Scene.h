@@ -7,6 +7,9 @@
 #include "models/Sphere.h"
 #include "models/CubeLight.h"
 
+#include "Transform.h"
+#include "Mesh.h"
+
 struct Scene
 {
     //Light models
@@ -23,5 +26,6 @@ struct Scene
 
     void createSphere(const glm::vec3& position, float radius, const glm::vec3& color);
     void createTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& color);
+    void createInstance(const Mesh& mesh, const Transform& transform);
     ~Scene();
 };

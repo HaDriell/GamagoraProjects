@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Ray.h"
-#include "Scene.h"
-#include "Intersect.h"
+#include "../Ray.h"
+#include "../Scene.h"
+#include "../Intersect.h"
 #include "Framebuffer.h"
 #include "Camera.h"
 

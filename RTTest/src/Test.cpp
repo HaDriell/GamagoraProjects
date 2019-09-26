@@ -3,7 +3,7 @@
 #include <vector>
 #include <glm/gtx/string_cast.hpp>
 
-#include "models/Mesh.h"
+#include "Mesh.h"
 #include "Ray.h"
 #include "models/Sphere.h"
 #include "Intersect.h"
@@ -16,11 +16,28 @@ bool about_equal(float value, float target, float epsilon = E)
 }
 
 //Testing obj loading
-void should_load_mesh()
+void should_load_obj()
 {
     Mesh mesh;
     mesh.load_obj("cube.obj");
+    assert(mesh.positions.size() == 8);
+    assert(mesh.indices.size() % 3 == 0);
+    assert(mesh.indices.size() == 3 * 2 * 6); // (6 * 2 Triangles)
+
+    mesh.load_obj("Love.obj");
+    assert(mesh.indices.size() % 3 == 0);
 }
+
+void should_load_off()
+{
+    Mesh mesh;
+    mesh.load_off("cube.off");
+    std::cout << mesh.positions.size() << std::endl;
+    assert(mesh.positions.size() == 8);
+    assert(mesh.indices.size() % 3 == 0);
+    assert(mesh.indices.size() == 3 * 2 * 6); // (6 * 2 Triangles)
+}
+
 
 // Testing Raycasting
 void should_intersect_sphere()
@@ -89,7 +106,6 @@ void should_intersect_nearest_sphere()
     Sphere s;
 
     assert(intersectNearest(r, spheres, t, s));
-    std::cout << t << std::endl;
     assert(about_equal(t, 9));
     assert(about_equal(s.position.z, 10));
 }
@@ -158,5 +174,6 @@ int main()
     should_not_intersect_triangle_right();
 
     //OBJ file test
-    should_load_mesh();
+    should_load_obj();
+    should_load_off();
 }

@@ -1,5 +1,5 @@
 #include "Framebuffer.h"
-#include "Util.h"
+#include "../Util.h"
 #include <FreeImage.h>
 #include <math.h>
 

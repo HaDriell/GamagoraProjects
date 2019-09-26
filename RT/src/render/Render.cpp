@@ -1,8 +1,7 @@
 #include "Render.h"
-#include "Util.h"
+#include "../Util.h"
 
 #include <omp.h>
-
 #include <random>
 #include <limits>
 #include <iostream>

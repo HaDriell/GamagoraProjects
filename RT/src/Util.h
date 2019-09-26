@@ -10,3 +10,4 @@ float lerp(float start, float end, float percent);
 float deg2rad(float degrees);
 
 std::string to_string(int value, int digits = 2);
+std::string trim(const std::string& string);
