@@ -1,0 +1,50 @@
+#pragma once
+
+#include <iostream>
+
+struct vec2
+{
+    float x, y;
+
+    vec2();
+    vec2(float scalar);
+    vec2(float x, float y);
+
+    static const vec2 X;
+    static const vec2 Y;
+    
+    float length() const;
+    float length2() const;
+    vec2 normalise() const;
+    float distance(const vec2& v) const;
+    float distance2(const vec2& v) const;
+    float dot(const vec2& v) const;
+    float cross(const vec2& v) const;
+};
+
+vec2 operator-(const vec2& v);
+
+vec2& operator+=(vec2& left, const vec2& right);
+vec2& operator-=(vec2& left, const vec2& right);
+vec2& operator*=(vec2& left, const vec2& right);
+vec2& operator/=(vec2& left, const vec2& right);
+
+vec2& operator+=(vec2& left, float value);
+vec2& operator-=(vec2& left, float value);
+vec2& operator*=(vec2& left, float value);
+vec2& operator/=(vec2& left, float value);
+
+vec2 operator+(const vec2& left, const vec2& right);
+vec2 operator-(const vec2& left, const vec2& right);
+vec2 operator*(const vec2& left, const vec2& right);
+vec2 operator/(const vec2& left, const vec2& right);
+
+vec2 operator+(const vec2& left, float value);
+vec2 operator-(const vec2& left, float value);
+vec2 operator*(const vec2& left, float value);
+vec2 operator/(const vec2& left, float value);
+
+bool operator==(const vec2& left, const vec2& right);
+bool operator!=(const vec2& left, const vec2& right);
+
+std::ostream& operator<<(std::ostream& stream, const vec2& v);
