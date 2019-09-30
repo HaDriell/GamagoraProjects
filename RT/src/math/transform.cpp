@@ -81,16 +81,17 @@ mat4 transform::get_matrix_inverse()
     return matrixInverse;
 }
 
-vec3 transform::apply(const vec3& point)
+
+vec3 transform::multiply(const vec3& v, bool point)
 {
-    computeMatrices();
-    return matrix * point;
+    vec4 t = get_matrix() * vec4(v.x, v.y, v.z, point ? 1 : 0);
+    return vec3(t.x, t.y, t.z);
 }
 
-vec3 transform::appplyInverse(const vec3& point)
+vec3 transform::multiplyInverse(const vec3& v, bool point)
 {
-    computeMatrices();
-    return matrixInverse * point;
+    vec4 t = get_matrix_inverse() * vec4(v.x, v.y, v.z, point ? 1 : 0);
+    return vec3(t.x, t.y, t.z);
 }
 
 void transform::computeMatrices()
@@ -98,17 +99,13 @@ void transform::computeMatrices()
     //skip compute when cache is enabled
     if (cached) return;
 
-    //Reset to Identity
-    matrix = mat4();
-    //Scale
-    matrix *= mat4::Scale(s.x, s.y, s.z);
-    //Rotate
-    matrix *= mat4::RotationX(r.x);
-    matrix *= mat4::RotationY(r.y);
-    matrix *= mat4::RotationZ(r.z);
-    //Translate
-    matrix *= mat4::Translation(t.x, t.y, t.z);
-    //Compute inverse
+    //Compute Matrix
+    matrix = mat4::Scale(s.x, s.y, s.z) 
+           * mat4::RotationX(r.x)
+           * mat4::RotationY(r.y)
+           * mat4::RotationZ(r.z)
+           * mat4::Translation(t);
+    //Compute Inverse
     matrixInverse = matrix.inverse();
 
     //enable cache

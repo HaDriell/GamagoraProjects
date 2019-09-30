@@ -157,6 +157,27 @@ vec3 operator/(const vec3& left, float value)
     );
 }
 
+vec3 operator+(float value, const vec3& left)
+{
+    return left + value;
+}
+
+vec3 operator-(float value, const vec3& left)
+{
+    return left - value;
+}
+
+vec3 operator*(float value, const vec3& left)
+{
+    return left * value;
+}
+
+vec3 operator/(float value, const vec3& left)
+{
+    return left / value;
+}
+
+
 
 bool operator==(const vec3& left, const vec3& right)
 {

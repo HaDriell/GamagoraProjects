@@ -21,8 +21,8 @@ public:
     void rotate(float xDegrees, float yDegrees, float zDegrees);
     void scale(float xScaling, float yScaling, float zScaling);
 
-    vec3 apply(const vec3& point);
-    vec3 appplyInverse(const vec3& point);
+    vec3 multiply(const vec3& v, bool point = true);
+    vec3 multiplyInverse(const vec3& v, bool point = true);
 
     vec3 get_translation();
     vec3 get_rotation();

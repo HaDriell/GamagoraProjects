@@ -44,6 +44,11 @@ vec2 operator-(const vec2& left, float value);
 vec2 operator*(const vec2& left, float value);
 vec2 operator/(const vec2& left, float value);
 
+vec2 operator+(float value, const vec2& left);
+vec2 operator-(float value, const vec2& left);
+vec2 operator*(float value, const vec2& left);
+vec2 operator/(float value, const vec2& left);
+
 bool operator==(const vec2& left, const vec2& right);
 bool operator!=(const vec2& left, const vec2& right);
 

@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "Util.h"
 
 unsigned int read_vertex_info(std::istringstream& stream, unsigned int& v, unsigned int& vt, unsigned int& vn)
 {

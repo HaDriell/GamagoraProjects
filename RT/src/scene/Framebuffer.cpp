@@ -1,5 +1,4 @@
 #include "Framebuffer.h"
-#include "../Util.h"
 #include <FreeImage.h>
 #include <math.h>
 
@@ -24,12 +23,12 @@ void Framebuffer::save(std::string filename)
     {
         for (int i = 0; i < width; i++)
         {
-            glm::vec3 p = pixel[i + j * width].color;
+            vec3 p = pixel[i + j * width].color;
             //Clamp values
             p.x = clamp(0, 1, p.x);
             p.y = clamp(0, 1, p.y);
             p.z = clamp(0, 1, p.z);
-            //Attenuate
+            //Adapt Color ramp
             p.x = std::pow(p.x, 1 / 2.2f);
             p.y = std::pow(p.y, 1 / 2.2f);
             p.z = std::pow(p.z, 1 / 2.2f);
@@ -51,12 +50,24 @@ void Framebuffer::clear()
 {
     for (int i = 0; i < width * height; i++)
     {
-        pixel[i].color = glm::vec3{0.f, 0.f, 0.f};
+        pixel[i].color = vec3{0.f, 0.f, 0.f};
         pixel[i].depth = std::numeric_limits<float>::max();
     }
 }
 
-void Framebuffer::write(unsigned int x, unsigned int y, const glm::vec3& color, float depth)
+void Framebuffer::resize(unsigned int width, unsigned int height)
+{
+    if (width == 0 || height == 0) 
+        return;
+    
+    delete[] pixel;
+    this->width = width;
+    this->height = height;
+    pixel = new Pixel[width * height];
+}
+
+
+void Framebuffer::write(unsigned int x, unsigned int y, const vec3& color, float depth)
 {
     if (x >= width) return;
     if (y >= height) return;

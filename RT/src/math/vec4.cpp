@@ -172,6 +172,25 @@ vec4 operator/(const vec4& left, float value)
     };
 }
 
+vec4 operator+(float value, const vec4& left)
+{
+    return left + value;
+}
+
+vec4 operator-(float value, const vec4& left)
+{
+    return left - value;
+}
+
+vec4 operator*(float value, const vec4& left)
+{
+    return left * value;
+}
+
+vec4 operator/(float value, const vec4& left)
+{
+    return left / value;
+}
 
 bool operator==(const vec4& left, const vec4& right)
 {

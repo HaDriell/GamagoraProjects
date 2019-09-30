@@ -53,6 +53,11 @@ vec3 operator-(const vec3& left, float value);
 vec3 operator*(const vec3& left, float value);
 vec3 operator/(const vec3& left, float value);
 
+vec3 operator+(float value, const vec3& left);
+vec3 operator-(float value, const vec3& left);
+vec3 operator*(float value, const vec3& left);
+vec3 operator/(float value, const vec3& left);
+
 bool operator==(const vec3& left, const vec3& right);
 bool operator!=(const vec3& left, const vec3& right);
 

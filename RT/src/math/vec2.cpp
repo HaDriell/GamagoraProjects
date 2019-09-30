@@ -140,6 +140,26 @@ vec2 operator/(const vec2& left, float value)
     };
 }
 
+vec2 operator+(float value, const vec2& left)
+{
+    return left + value;
+}
+
+vec2 operator*(float value, const vec2& left)
+{
+    return left * value;
+}
+
+vec2 operator/(float value, const vec2& left)
+{
+    return left / value;
+}
+
+vec2 operator-(float value, const vec2& left)
+{
+    return left - value;
+}
+
 bool operator==(const vec2& left, const vec2& right)
 {
     return left.x == right.x && left.y == right.y;

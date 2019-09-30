@@ -40,6 +40,11 @@ vec4 operator-(const vec4& left, float value);
 vec4 operator*(const vec4& left, float value);
 vec4 operator/(const vec4& left, float value);
 
+vec4 operator+(float value, const vec4& left);
+vec4 operator-(float value, const vec4& left);
+vec4 operator*(float value, const vec4& left);
+vec4 operator/(float value, const vec4& left);
+
 bool operator==(const vec4& left, const vec4& right);
 bool operator!=(const vec4& left, const vec4& right);
 
