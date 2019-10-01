@@ -262,10 +262,3 @@ mat4 operator*(const mat4& a, const mat4& b)
     m.m33 = a.m30 * b.m03 + a.m31 * b.m13 + a.m32 * b.m23 + a.m33 * b.m33;
     return m;
 }
-
-mat4& operator*=(mat4& left, const mat4& right)
-{
-    mat4 result = left * right;
-    left = result;
-    return *(&left);
-}
