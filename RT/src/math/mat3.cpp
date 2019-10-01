@@ -24,7 +24,7 @@ m20(m20), m21(m21), m22(m22) {}
 
 mat3 mat3::Translation(float x, float y)
 {
-    mat3 m = mat3();
+    mat3 m;
     m.m02 = x;
     m.m12 = y;
     return mat3(1, 0, x,

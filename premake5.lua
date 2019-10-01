@@ -1,6 +1,8 @@
 workspace "TP"
     configurations { "Debug", "Release" }
 
+    warnings "Default"
+
     filter { "configurations:Debug" }
         symbols "On"
     filter {}

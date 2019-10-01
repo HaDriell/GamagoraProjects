@@ -4,6 +4,7 @@
 #include <random>
 
 
+Sphere::~Sphere() {}
 
 HitResult Sphere::intersect(const vec3& position, const vec3& direction)
 {
@@ -36,16 +37,15 @@ HitResult Sphere::intersect(const vec3& position, const vec3& direction)
     return result;
 }
 
-vec3 Sphere::get_random_point_on_surface(float bias)
+vec3 Sphere::get_random_point_on_surface(std::default_random_engine& random, float bias)
 {
+    //TODO : a changer
     //http://mathworld.wolfram.com/SpherePointPicking.html
-    std::random_device rd;
-    std::mt19937_64 mt(rd());
     std::uniform_real_distribution<> dist_u(-1, 1);
     std::uniform_real_distribution<> dist_theta(0, 2 * PI);
 
-    float z = dist_u(mt);
-    float theta = dist_theta(mt);
+    float z = dist_u(random);
+    float theta = dist_theta(random);
     float radius = std::sqrt(1 - z*z) + bias;
 
 

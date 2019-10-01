@@ -1,6 +1,10 @@
 #include "Instance.h"
 #include <iostream>
 
+
+Instance::~Instance() {}
+
+
 HitResult Instance::hit(const vec3& position, const vec3& direction)
 {
     //Inverse Tranform the ray to Model space

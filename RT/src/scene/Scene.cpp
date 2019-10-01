@@ -6,6 +6,8 @@
 #include <limits>
 #include <omp.h>
 
+#include <random>
+
 
 HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 {
@@ -40,6 +42,7 @@ vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, c
 
 vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
 {
+    std::default_random_engine prng;
     vec3 total = vec3();
     for (PointLight* light : scene.pointLights)
     {
@@ -50,11 +53,11 @@ vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
     {
         if (instance->material.emissive)
         {
-            for (int sample = 0; sample < scene.light_sampling_count; sample++)
+            for (unsigned int sample = 0; sample < scene.light_sampling; sample++)
             {
                 PointLight light;
-                light.position = instance->get_random_point_on_surface(scene.bias);
-                light.intensity = instance->material.emission_intensity / (float) scene.light_sampling_count;
+                light.position = instance->get_random_point_on_surface(prng, scene.bias);
+                light.intensity = instance->material.emission_intensity / (float) scene.light_sampling;
                 light.color = instance->material.emission_color;
                 total += get_point_light_illumination(scene, light, hit);                
             }
@@ -63,7 +66,7 @@ vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
     return total;
 }
 
-vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, int level)
+vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level)
 {
     //Abort tracing above a certain amount of bounces
     if (level >= scene.ray_max_bounce)
@@ -82,15 +85,27 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, int 
     //The Hit surface is opaque diffuse
     if (material.diffuse)
     {
+        //Direct illumination
         vec3 illumination = get_surface_illumination(scene, hit);
-        color += illumination * material.albedo;
+        color += illumination * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
+        
+        //Indirect illumination
+        //TODO
     }
 
     //The Hit surface emits light
     if (material.emissive)
     {
-        float angle = hit.normal.dot(-direction);
+        //Direct Light bearing !
         color += material.emission_color * material.emission_intensity / (hit.distance * hit.distance);
+    }
+
+    if (material.reflective)
+    {
+        //TODO
+        vec3 reflection_position = hit.hitPoint + hit.normal * scene.bias;
+        vec3 reflection_direction = direction.reflect(hit.normal).normalise();
+        color += material.reflectiveness * trace(scene, reflection_position, reflection_direction, level + 1);
     }
 
     return color;
@@ -121,9 +136,9 @@ void Scene::render()
     std::cout << "Scale:" << scale << std::endl;
 
     #pragma omp parallel for
-    for (int y = 0; y < camera.framebuffer.height; y++)
+    for (unsigned int y = 0; y < camera.framebuffer.height; y++)
     {
-        for (int x = 0; x < camera.framebuffer.width; x++)
+        for (unsigned int x = 0; x < camera.framebuffer.width; x++)
         {
             float dx = (x + 0.5f - camera.framebuffer.width / 2) * imageAspectRatio;
             float dy = (y + 0.5f - camera.framebuffer.height / 2);
@@ -139,9 +154,11 @@ void Scene::render()
 
 Scene::~Scene()
 {
-    for(Instance* instance : instances) delete instance;
+    for(Instance* instance : instances)
+        delete instance;
     instances.clear();
-    for(PointLight* instance : pointLights) delete instance;    
+    for(PointLight* instance : pointLights)
+        delete instance;    
     pointLights.clear();    
 }
 
@@ -164,6 +181,16 @@ PointLight* Scene::createLight(const vec3& position, float intensity, const vec3
     instance->color = color;
 
     pointLights.push_back(instance);
+
+    return instance;
+}
+
+
+Mesh* Scene::createMesh()
+{
+    Mesh* instance = new Mesh();
+
+    instances.push_back(instance);
 
     return instance;
 }

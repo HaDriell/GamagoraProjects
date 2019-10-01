@@ -1,10 +1,92 @@
 #include "Mesh.h"
 
+#include <limits>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-unsigned int read_vertex_info(std::istringstream& stream, unsigned int& v, unsigned int& vt, unsigned int& vn)
+Mesh::~Mesh() {}
+
+//https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
+vec3 triangle_normal(const vec3& vertex0, const vec3& vertex1, const vec3& vertex2)
+{
+    vec3 edge1 = vertex1 - vertex0;
+    vec3 edge2 = vertex2 - vertex0;
+    return edge1.cross(edge2).normalise();
+}
+
+
+//https://fr.wikipedia.org/wiki/Algorithme_d%27intersection_de_M%C3%B6ller%E2%80%93Trumbore
+HitResult intersect_triangle(const vec3& position, const vec3& direction, const vec3& vertex0, const vec3& vertex1, const vec3& vertex2)
+{
+    HitResult hit;
+    hit.hit = false;
+
+    const float EPSILON = 1e-6;
+    vec3 edge1 = vertex1 - vertex0;
+    vec3 edge2 = vertex2 - vertex0;
+
+    vec3 h, s, q;
+    float a, f, u, v;
+
+    h = direction.cross(edge2);
+    a = edge1.dot(h);
+    if (a > -EPSILON && a < EPSILON)
+        return hit;
+
+    f = 1.0/a;
+    s = position - vertex0;
+    u = f * (s.dot(h));
+    if (u < 0.0 || u > 1.0)
+        return hit;
+
+    q = s.cross(edge1);
+    v = f * direction.dot(q);
+    if (v < 0.0 || u + v > 1.0)
+        return hit;
+    
+    float t = f * edge2.dot(q);
+    if (t > EPSILON)
+    {
+        hit.hit = true;
+        hit.distance = t;
+        hit.hitPoint = position + direction * t;
+        hit.normal   = triangle_normal(vertex0, vertex1, vertex2);
+    }
+
+    return hit;
+}
+
+
+HitResult Mesh::intersect(const vec3& position, const vec3& direction)
+{
+    HitResult hit;
+    int tCount = indices.size() / 3;
+    for (int t = 0; t < tCount; t += 3)
+    {
+        vec3 v0 = positions[t + 0];
+        vec3 v1 = positions[t + 1];
+        vec3 v2 = positions[t + 2];
+        hit = intersect_triangle(position, direction, v0, v1, v2);
+
+        //Intersect already setups everything else for us
+        if (hit.hit)
+        {
+            hit.instance = this;
+            return hit;
+        }
+    }
+    return hit;
+}
+
+vec3 Mesh::get_random_point_on_surface(std::default_random_engine& random, float bias)
+{
+    //TODO : find a random triangle on surface 
+    return vec3();
+}
+
+
+unsigned int __obj_read_vertex_info(std::istringstream& stream, unsigned int& v, unsigned int& vt, unsigned int& vn)
 {
     unsigned int a, b, c;
     unsigned int count = 0;
@@ -50,13 +132,14 @@ unsigned int read_vertex_info(std::istringstream& stream, unsigned int& v, unsig
     return count;
 }
 
-void Mesh::load_off(const std::string& path)
+void Mesh::load_off_file(const std::string& path)
 {
     std::ifstream file(path);
     if (!file.is_open())
         return;
 
-    enum Section {
+    enum Section
+    {
         MAGICK_NUMBER = 0,
         HEADER,
         VERTEX_DATA,
@@ -67,8 +150,8 @@ void Mesh::load_off(const std::string& path)
     Section section = MAGICK_NUMBER;
     unsigned int vertexCount;
     unsigned int faceCount;
-    std::vector<glm::vec3> positions;
-    std::vector<glm::vec3> colors;
+    std::vector<vec3> positions;
+    std::vector<vec3> colors;
     std::vector<unsigned int> indices;
 
     
@@ -87,7 +170,8 @@ void Mesh::load_off(const std::string& path)
 
         switch (section)
         {
-        case Section::MAGICK_NUMBER:
+        case MAGICK_NUMBER:
+        {
             //This is a header file type check.
             if (line[0] != 'O' 
             ||  line[1] != 'F'
@@ -97,11 +181,12 @@ void Mesh::load_off(const std::string& path)
                 return;
             }
 
-            section = Section::HEADER;            
+            section = HEADER;            
+        }
         break;
 
-        case Section::HEADER:
-
+        case HEADER:
+        {
             if (!(stream >> vertexCount >> faceCount))
             {
                 std::cout << "Aborting load : unable to read vertex and face count" << std::endl;
@@ -110,11 +195,13 @@ void Mesh::load_off(const std::string& path)
 
             positions.reserve(vertexCount);
             colors.reserve(faceCount);
-            section = Section::VERTEX_DATA;
+            section = VERTEX_DATA;
+        }
         break;
 
-        case Section::VERTEX_DATA:
-            glm::vec3 v;
+        case VERTEX_DATA:
+        {
+            vec3 v;
 
             if (!(stream >> v.x >> v.y >> v.z))
             {
@@ -126,10 +213,12 @@ void Mesh::load_off(const std::string& path)
 
             //We're done loading vertex positions
             if (positions.size() == vertexCount)
-                section = Section::FACE_DATA;
+                section = FACE_DATA;
+        }
         break;
 
-        case Section::FACE_DATA:
+        case FACE_DATA:
+        {
             unsigned int facePoints;
 
             if (!(stream >> facePoints) || facePoints < 3)
@@ -161,17 +250,18 @@ void Mesh::load_off(const std::string& path)
             }
 
             //Colors are optional. Default to (1, 1, 1)
-            glm::vec3 color;
+            vec3 color;
             if (!(stream >> color.x >> color.y >> color.z))
             {
-                color = glm::vec3{1.f, 1.f, 1.f};
+                color = vec3{1.f, 1.f, 1.f};
             }
-            colors.push_back(glm::normalize(color));
+            colors.push_back(color.normalise());
 
             //We're done loading Face data
             if (colors.size() == faceCount)
                 section = Section::END;
-        break;    
+        }
+        break;
         }
     }
     this->positions = positions;
@@ -179,7 +269,7 @@ void Mesh::load_off(const std::string& path)
     this->indices = indices;
 }
 
-void Mesh::load_obj(const std::string& path)
+void Mesh::load_obj_file(const std::string& path)
 {
     struct Vertex {
         unsigned int v0,  v1,  v2; // 3 positions
@@ -191,9 +281,9 @@ void Mesh::load_obj(const std::string& path)
     if (!file.is_open())
         return;
     
-    std::vector<glm::vec3> positions;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec2> uvs;
+    std::vector<vec3> positions;
+    std::vector<vec3> normals;
+    std::vector<vec2> uvs;
 
     //OBJ index data
     std::vector<Vertex> vertices;
@@ -217,7 +307,7 @@ void Mesh::load_obj(const std::string& path)
             //Position handling
             if (header == "v")
             {
-                glm::vec3 position;
+                vec3 position;
                 if (stream >> position.x >> position.y >> position.z)
                 {
                     positions.push_back(position);
@@ -228,7 +318,7 @@ void Mesh::load_obj(const std::string& path)
             //Normal handling
             if (header == "vn")
             {
-                glm::vec3 normal;
+                vec3 normal;
                 if (stream >> normal.x >> normal.y >> normal.z)
                 {
                     normals.push_back(normal);
@@ -239,7 +329,7 @@ void Mesh::load_obj(const std::string& path)
             //UVmapping handling
             if (header == "vt")
             {
-                glm::vec2 uv;
+                vec2 uv;
                 if (stream >> uv.x >> uv.y)
                 {
                     uvs.push_back(uv);
@@ -252,15 +342,15 @@ void Mesh::load_obj(const std::string& path)
                 Vertex vertex;
                 //Read first vertex info
                 while (stream.peek() == ' ') stream.ignore();
-                read_vertex_info(stream, vertex.v0, vertex.vt0, vertex.vn0);
+                __obj_read_vertex_info(stream, vertex.v0, vertex.vt0, vertex.vn0);
 
                 //Read second vertex info
                 while (stream.peek() == ' ') stream.ignore();
-                read_vertex_info(stream, vertex.v1, vertex.vt1, vertex.vn1);
+                __obj_read_vertex_info(stream, vertex.v1, vertex.vt1, vertex.vn1);
 
                 //Read third vertex info
                 while (stream.peek() == ' ') stream.ignore();
-                read_vertex_info(stream, vertex.v2, vertex.vt2, vertex.vn2);
+                __obj_read_vertex_info(stream, vertex.v2, vertex.vt2, vertex.vn2);
 
                 vertices.push_back(vertex);
                 continue;
@@ -285,17 +375,62 @@ void Mesh::load_obj(const std::string& path)
         this->indices.push_back(vertex.v0 - 1);
         this->indices.push_back(vertex.v1 - 1);
         this->indices.push_back(vertex.v2 - 1);
-        // //Copy vertices positions
-        // this->positions.push_back(positions[vertex.v0]);
-        // this->positions.push_back(positions[vertex.v1]);
-        // this->positions.push_back(positions[vertex.v2]);
-        // //Copy vertices normals (optional)
-        // if (vertex.vn0 > 0) this->normals.push_back(normals[vertex.vn0 - 1]);
-        // if (vertex.vn1 > 0) this->normals.push_back(normals[vertex.vn1 - 1]);
-        // if (vertex.vn2 > 0) this->normals.push_back(normals[vertex.vn2 - 1]);
-        // //Copy vertices texCoords (optional)
-        // if (vertex.vt0 > 0) this->uvs.push_back(uvs[vertex.vt0 - 1]);
-        // if (vertex.vt1 > 0) this->uvs.push_back(uvs[vertex.vt1 - 1]);
-        // if (vertex.vt2 > 0) this->uvs.push_back(uvs[vertex.vt2 - 1]);
+    }
+}
+
+
+vec3 Mesh::compute_centroid()
+{
+    float area = 0;
+    vec3 centroid = {0, 0, 0};
+    int tCount = indices.size();
+    for (int t = 0; t < tCount; t += 3)
+    {
+        vec3 vertex0 = positions[t + 0];
+        vec3 vertex1 = positions[t + 1];
+        vec3 vertex2 = positions[t + 2];
+        vec3 edge1 = vertex1 - vertex0;
+        vec3 edge2 = vertex2 - vertex0;
+        //Compute triangle Centroid & Area
+        vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3;
+        float tArea = 0.5 * edge1.cross(edge2).length();
+
+        //Sum
+        centroid += tArea * tCentroid;
+        area += tArea;
+    }
+    return centroid /= area;
+}
+
+
+void Mesh::normalize()
+{
+    vec3 min, max;
+    
+    min.x = std::numeric_limits<float>::max();
+    min.y = std::numeric_limits<float>::max();
+    min.z = std::numeric_limits<float>::max();
+    
+    max.x = std::numeric_limits<float>::min();
+    max.y = std::numeric_limits<float>::min();
+    max.z = std::numeric_limits<float>::min();
+    
+    for (vec3 v : positions)
+    {
+        //Update min
+        if (v.x < min.x) min.x = v.x;
+        if (v.y < min.y) min.y = v.y;
+        if (v.z < min.z) min.z = v.z;
+        //Update max
+        if (v.x > max.x) max.x = v.x;
+        if (v.y > max.y) max.y = v.y;
+        if (v.z > max.z) max.z = v.z;
+    }
+    vec3 min2max = max - min;
+
+    //Normalize every vertex into the [-1;1] space
+    for (int v = 0; v < positions.size(); v++)
+    {
+        positions[v] = 2 * (positions[v] - min) / min2max - 1;
     }
 }

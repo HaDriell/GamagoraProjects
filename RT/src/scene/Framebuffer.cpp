@@ -19,9 +19,9 @@ void Framebuffer::save(std::string filename)
     FreeImage_Initialise();
     FIBITMAP* bitmap = FreeImage_Allocate(width, height, 32);
     RGBQUAD color;    
-    for(int j = 0; j < height; j++)
+    for(unsigned int j = 0; j < height; j++)
     {
-        for (int i = 0; i < width; i++)
+        for (unsigned int i = 0; i < width; i++)
         {
             vec3 p = pixel[i + j * width].color;
             //Clamp values

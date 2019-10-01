@@ -2,10 +2,11 @@
 #include <iostream>
 #include <vector>
 
+#include <math.h>
 #include "math/math.h"
 
-#include "Mesh.h"
-#include "models/Sphere.h"
+#include "scene/Mesh.h"
+#include "scene/Sphere.h"
 
 const float E = 0.00001f;
 
@@ -16,7 +17,7 @@ bool about_equal(float value, float target, float epsilon = E)
 
 bool about_equal(const vec3& a, const vec3& b, float espilon = E)
 {
-    return about_equal(a.x, b.x, espilon) 
+    return about_equal(a.x, b.x, espilon)
         && about_equal(a.y, b.y, espilon)
         && about_equal(a.z, b.z, espilon);
 }
@@ -101,19 +102,19 @@ void should_test_transform()
 void should_load_obj()
 {
     Mesh mesh;
-    mesh.load_obj("cube.obj");
+    mesh.load_obj_file("cube.obj");
     assert(mesh.positions.size() == 8);
     assert(mesh.indices.size() % 3 == 0);
     assert(mesh.indices.size() == 3 * 2 * 6); // (6 * 2 Triangles)
 
-    mesh.load_obj("Love.obj");
+    mesh.load_obj_file("Love.obj");
     assert(mesh.indices.size() % 3 == 0);
 }
 
 void should_load_off()
 {
     Mesh mesh;
-    mesh.load_off("cube.off");
+    mesh.load_off_file("cube.off");
     assert(mesh.positions.size() == 8);
     assert(mesh.indices.size() % 3 == 0);
     assert(mesh.indices.size() == 3 * 2 * 6); // (6 * 2 Triangles)
