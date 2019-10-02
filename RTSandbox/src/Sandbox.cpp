@@ -1,4 +1,4 @@
-#include "scene/Scene.h"
+#include "Scene.h"
 #include <sstream>
 
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../math/math.h"
+#include "maths.h"
 #include <string>
 
 struct Pixel 

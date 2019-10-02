@@ -5,7 +5,7 @@
 #include <string>
 
 #include "Instance.h"
-#include "../math/math.h"
+#include "maths.h"
 
 struct Mesh : public Instance
 {
