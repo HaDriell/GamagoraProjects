@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../math/math.h"
+#include "maths.h"
 
 //By default a constructed material is an opaque white material
 struct Material

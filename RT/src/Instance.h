@@ -2,7 +2,7 @@
 
 #include <random>
 
-#include "../math/math.h"
+#include "maths.h"
 #include "Material.h"
 
 // pre-declaration for HitResult
