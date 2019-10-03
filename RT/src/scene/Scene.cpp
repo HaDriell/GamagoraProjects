@@ -8,7 +8,6 @@
 
 #include <random>
 
-
 HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 {
     HitResult hit;
@@ -40,9 +39,8 @@ vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, c
     return vec3();
 }
 
-vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
+vec3 get_surface_illumination(const Scene& scene, const HitResult& hit, std::default_random_engine& entropy)
 {
-    std::default_random_engine prng;
     vec3 total = vec3();
     for (PointLight* light : scene.pointLights)
     {
@@ -56,7 +54,7 @@ vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
             for (unsigned int sample = 0; sample < scene.light_sampling; sample++)
             {
                 PointLight light;
-                light.position = instance->get_random_point_on_surface(prng, scene.bias);
+                light.position = instance->get_random_point_on_surface(entropy, scene.bias);
                 light.intensity = instance->material.emission_intensity / (float) scene.light_sampling;
                 light.color = instance->material.emission_color;
                 total += get_point_light_illumination(scene, light, hit);                
@@ -66,7 +64,7 @@ vec3 get_surface_illumination(const Scene& scene, const HitResult& hit)
     return total;
 }
 
-vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level)
+vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level, std::default_random_engine& entropy)
 {
     //Abort tracing above a certain amount of bounces
     if (level >= scene.ray_max_bounce)
@@ -86,7 +84,7 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
     if (material.diffuse)
     {
         //Direct illumination
-        vec3 illumination = get_surface_illumination(scene, hit);
+        vec3 illumination = get_surface_illumination(scene, hit, entropy);
         color += illumination * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
         
         //Indirect illumination
@@ -105,7 +103,7 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
         //TODO
         vec3 reflection_position = hit.hitPoint + hit.normal * scene.bias;
         vec3 reflection_direction = direction.reflect(hit.normal).normalise();
-        color += material.reflectiveness * trace(scene, reflection_position, reflection_direction, level + 1);
+        color += material.reflectiveness * trace(scene, reflection_position, reflection_direction, level + 1, entropy);
     }
 
     return color;
@@ -140,13 +138,20 @@ void Scene::render()
     {
         for (unsigned int x = 0; x < camera.framebuffer.width; x++)
         {
-            float dx = (x + 0.5f - camera.framebuffer.width / 2) * imageAspectRatio;
-            float dy = (y + 0.5f - camera.framebuffer.height / 2);
+            std::default_random_engine entropy;
+            std::uniform_real_distribution<> dist_x(0, 1);
+            std::uniform_real_distribution<> dist_y(0, 1);
+            vec3 color = vec3(0, 0, 0);
+            for (unsigned int sample = 0; sample < pixel_sampling; sample++)
+            {
+                float dx = (x + dist_x(entropy) - camera.framebuffer.width / 2) * imageAspectRatio;
+                float dy = (y + dist_y(entropy) - camera.framebuffer.height / 2);
 
-            vec3 direction = (u * dx) + (v * dy) + (w * focalDistance);
-            direction = direction.normalise();
+                vec3 direction = (u * dx) + (v * dy) + (w * focalDistance);
+                direction = direction.normalise();
 
-            vec3 color = trace(*this, camera.position, direction, 0);
+                color += trace(*this, camera.position, direction, 0, entropy) / (float) pixel_sampling;
+            }
             camera.framebuffer.write(x, y, color, 1);
         }
     }
@@ -160,6 +165,18 @@ Scene::~Scene()
     for(PointLight* instance : pointLights)
         delete instance;    
     pointLights.clear();    
+}
+
+Triangle* Scene::createTriangle(const vec3& a, const vec3& b, const vec3& c)
+{
+    Triangle* triangle = new Triangle();
+    triangle->vertex0 = a;
+    triangle->vertex1 = b;
+    triangle->vertex2 = c;
+
+    instances.push_back(triangle);
+
+    return triangle;
 }
 
 Sphere* Scene::createSphere(const vec3& position, float radius)

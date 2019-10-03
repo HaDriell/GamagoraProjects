@@ -3,6 +3,7 @@
 #include <vector>
 #include "Instance.h"
 #include "PointLight.h"
+#include "Triangle.h"
 #include "Sphere.h"
 #include "Mesh.h"
 
@@ -22,9 +23,11 @@ struct Scene
     std::vector<PointLight*>    pointLights;
     std::vector<Instance*>      instances;
 
+    Triangle*   createTriangle(const vec3& a, const vec3& b, const vec3& c);
     Sphere*     createSphere(const vec3& position, float radius);
-    PointLight* createLight(const vec3& position, float intensity, const vec3& color);
     Mesh*       createMesh();
+
+    PointLight* createLight(const vec3& position, float intensity, const vec3& color);
 
     ~Scene();
 
