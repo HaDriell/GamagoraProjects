@@ -126,8 +126,8 @@ mat4 mat4::Translation(float x, float y, float z)
 
 mat4 mat4::LookAt(const vec3& position, const vec3& target, const vec3& up)
 {
-    vec3 f = (target - position).normalise();
-    vec3 s = f.cross(up.normalise());
+    vec3 f = (target - position).normalize();
+    vec3 s = f.cross(up.normalize());
     vec3 u = s.cross(f);
 
     mat4 view = mat4(

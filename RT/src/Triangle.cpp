@@ -40,7 +40,7 @@ HitResult Triangle::intersect(const vec3& position, const vec3& direction)
         hit.hit = true;
         hit.distance = t;
         hit.hitPoint = position + direction * t;
-        hit.normal = edge1.cross(edge2).normalise();
+        hit.normal = edge1.cross(edge2).normalize();
         hit.instance = this;
     }
 
@@ -51,7 +51,7 @@ vec3 Triangle::get_random_point_on_surface(std::default_random_engine& random, f
     //https://math.stackexchange.com/questions/18686/uniform-random-point-in-triangle
     vec3 edge1 = vertex1 - vertex0;
     vec3 edge2 = vertex2 - vertex0;
-    vec3 normal = edge1.cross(edge2).normalise();
+    vec3 normal = edge1.cross(edge2).normalize();
     std::uniform_real_distribution<> dist_r1(0, 1);
     std::uniform_real_distribution<> dist_r2(0, 1);
     float r1 = std::sqrt( dist_r1(random) );

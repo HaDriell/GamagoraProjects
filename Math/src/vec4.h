@@ -12,7 +12,7 @@ struct vec4
     
     float length() const;
     float length2() const;
-    vec4 normalise() const;
+    vec4 normalize() const;
     float distance(const vec4& v) const;
     float distance2(const vec4& v) const;
     float dot(const vec4& v) const;

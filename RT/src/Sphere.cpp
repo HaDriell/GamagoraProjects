@@ -30,7 +30,7 @@ HitResult Sphere::intersect(const vec3& position, const vec3& direction)
             result.distance = distance;
             result.hit = true;
             result.hitPoint = position + direction * distance;
-            result.normal = result.hitPoint.normalise();
+            result.normal = result.hitPoint.normalize();
             result.instance = this;
         }
     }

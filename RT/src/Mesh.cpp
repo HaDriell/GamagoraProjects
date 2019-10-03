@@ -5,22 +5,83 @@
 #include <fstream>
 #include <sstream>
 
-Mesh::~Mesh() {}
-
-//https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
-vec3 triangle_normal(const vec3& vertex0, const vec3& vertex1, const vec3& vertex2)
+//Useful Parsing functions
+bool __read_unsigned_int(std::istringstream& stream, unsigned int& value)
 {
-    vec3 edge1 = vertex1 - vertex0;
-    vec3 edge2 = vertex2 - vertex0;
-    return edge1.cross(edge2).normalise();
+    if (!(stream >> value))
+        return false;
+    return true;
+}
+
+bool __read_vec3(std::istringstream& stream, vec3& v)
+{
+    if (!(stream >> v.x >> v.y >> v.z))
+        return false;
+    return true;
+}
+
+bool __read_vec2(std::istringstream& stream, vec2& v)
+{
+    if (!(stream >> v.x >> v.y))
+        return false;
+    return true;
+}
+
+void normalize_vertices(std::vector<Vertex>& vertices)
+{
+    vec3 centroid;
+    float area = 0;
+
+    int triangle = 0;
+    while (triangle < vertices.size())
+    {
+        vec3 vertex0 = vertices[triangle++].position;
+        vec3 vertex1 = vertices[triangle++].position;
+        vec3 vertex2 = vertices[triangle++].position;
+        vec3 edge1 = vertex1 - vertex0;
+        vec3 edge2 = vertex2 - vertex0;
+
+        //Compute triangle Centroid & Area
+        vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3;
+        float tArea = 0.5 * edge1.cross(edge2).length();
+
+        //Sum
+        centroid += tArea * tCentroid;
+        area += tArea;
+    }
+    centroid /= area;
+
+    //Center Mesh around origin
+    for (Vertex& vertex : vertices)
+    {
+        vertex.position -= centroid;
+    }
+
+    //Compute the max X, Y and Z
+    vec3 max = vec3(std::numeric_limits<float>::min());   
+    for (Vertex& vertex : vertices)
+    {
+        max.x = std::max(max.x, vertex.position.x);
+        max.y = std::max(max.y, vertex.position.y);
+        max.z = std::max(max.z, vertex.position.z);
+    }
+
+    //Normalize if possible
+    if (max.length2() > 0)
+    {
+        float scale = 1.f / max.length();
+        for (Vertex& vertex : vertices)
+        {
+            vertex.position *= scale;
+        }
+    }
 }
 
 
-//https://fr.wikipedia.org/wiki/Algorithme_d%27intersection_de_M%C3%B6ller%E2%80%93Trumbore
+//https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
 HitResult intersect_triangle(const vec3& position, const vec3& direction, const vec3& vertex0, const vec3& vertex1, const vec3& vertex2)
 {
     HitResult hit;
-    hit.hit = false;
 
     const float EPSILON = 1e-6;
     vec3 edge1 = vertex1 - vertex0;
@@ -51,31 +112,31 @@ HitResult intersect_triangle(const vec3& position, const vec3& direction, const 
         hit.hit = true;
         hit.distance = t;
         hit.hitPoint = position + direction * t;
-        hit.normal   = triangle_normal(vertex0, vertex1, vertex2);
+        hit.normal   = edge1.cross(edge2).normalize();
     }
 
     return hit;
 }
 
-
 HitResult Mesh::intersect(const vec3& position, const vec3& direction)
 {
     HitResult hit;
-    int tCount = indices.size() / 3;
-    for (int t = 0; t < tCount; t += 3)
-    {
-        vec3 v0 = positions[t + 0];
-        vec3 v1 = positions[t + 1];
-        vec3 v2 = positions[t + 2];
-        hit = intersect_triangle(position, direction, v0, v1, v2);
 
-        //Intersect already setups everything else for us
-        if (hit.hit)
-        {
-            hit.instance = this;
-            return hit;
-        }
+    int triangle = 0;
+    while (!hit.hit && triangle < vertices.size())
+    {
+        vec3 v0 = vertices[triangle++].position;
+        vec3 v1 = vertices[triangle++].position;
+        vec3 v2 = vertices[triangle++].position;
+        hit = intersect_triangle(position, direction, v0, v1, v2);
     }
+
+    if (hit.hit)
+    {
+        hit.instance = this;
+        return hit;
+    }
+
     return hit;
 }
 
@@ -83,53 +144,6 @@ vec3 Mesh::get_random_point_on_surface(std::default_random_engine& random, float
 {
     //TODO : find a random triangle on surface 
     return vec3();
-}
-
-
-unsigned int __obj_read_vertex_info(std::istringstream& stream, unsigned int& v, unsigned int& vt, unsigned int& vn)
-{
-    unsigned int a, b, c;
-    unsigned int count = 0;
-
-    if (stream.peek() != ' ' && stream >> a)
-    {
-        count++;
-        while (stream.peek() == '/') stream.ignore();
-    }
-
-    if (stream.peek() != ' ' && stream >> b)
-    {
-        count++;
-        while (stream.peek() == '/') stream.ignore();
-    }
-    
-    if (stream.peek() != ' ' && stream >> c)
-    {
-        count++;
-        while (stream.peek() == '/') stream.ignore();
-    }
-    switch (count)
-    {
-        case 1:
-            v = a;
-        break;
-
-        case 2:
-            v = a;
-            vn = b;
-        break;
-
-        case 3:
-            v = a;
-            vt = b;
-            vn = c;
-        break;
-    
-        default:
-        break;
-    }
-
-    return count;
 }
 
 void Mesh::load_off_file(const std::string& path)
@@ -148,11 +162,15 @@ void Mesh::load_off_file(const std::string& path)
     };
     
     Section section = MAGICK_NUMBER;
-    unsigned int vertexCount;
-    unsigned int faceCount;
+    unsigned int vertexCount, vertexRead = 0;
+    unsigned int faceCount, faceRead = 0;
+
+    //Indexed data
     std::vector<vec3> positions;
-    std::vector<vec3> colors;
-    std::vector<unsigned int> indices;
+
+    std::vector<Vertex> vertices;
+
+
 
     
     //Parse file
@@ -194,7 +212,6 @@ void Mesh::load_off_file(const std::string& path)
             }
 
             positions.reserve(vertexCount);
-            colors.reserve(faceCount);
             section = VERTEX_DATA;
         }
         break;
@@ -202,98 +219,105 @@ void Mesh::load_off_file(const std::string& path)
         case VERTEX_DATA:
         {
             vec3 v;
-
-            if (!(stream >> v.x >> v.y >> v.z))
+            if (!__read_vec3(stream, v))
             {
                 std::cout << "Aborting load : unable to read vertex data" << std::endl;
                 return;
             }
-            
             positions.push_back(v);
 
-            //We're done loading vertex positions
-            if (positions.size() == vertexCount)
+            vertexRead++;
+            if (vertexRead >= vertexCount)
                 section = FACE_DATA;
         }
         break;
 
         case FACE_DATA:
         {
-            unsigned int facePoints;
+            //Tokenize everything then parse
+            unsigned int value;
+            std::vector<unsigned int> data;
+            while (__read_unsigned_int(stream, value)) data.push_back(value);
 
-            if (!(stream >> facePoints) || facePoints < 3)
+            if (data.empty())
             {
-                std::cout << "Aborting load : unable to read face data" << std::endl;
+                std::cout << "Aborting load : Face without data !" << std::endl;
+            }
+
+            unsigned int face_index_count = data[0];            
+
+            //Check that Face declares a correct number of indices
+            if (face_index_count < 3)
+            {
+                std::cout << "Aborting load : Face declared only " << face_index_count << " indices." << std::endl;
                 return;
             }
-            
-            unsigned int v0, v1, v2;
-
-            //Minimum 3 index read
-            if (!(stream >> v0 >> v1 >> v2))
+            if (face_index_count > data.size() - 1)
+            {
+                std::cout << "Aborting load : Face declared " << face_index_count << " indices but there are only " << (data.size() - 1) << " available max !" << std::endl;
                 return;
-            
-            //force at least one pass
-            for (int i = 3 - 1; i < facePoints; i++)
-            {
-                //Store points as triplets of indices
-                indices.push_back(v0);
-                indices.push_back(v1);
-                indices.push_back(v2);
-
-                //Shift v2 & v1 and consume another point
-                if (i + 1 < facePoints)
-                {
-                    v1 = v2;
-                    stream >> v2;
-                }
             }
 
-            //Colors are optional. Default to (1, 1, 1)
-            vec3 color;
-            if (!(stream >> color.x >> color.y >> color.z))
+            vec3 color = vec3(1, 1, 1);
+            if (face_index_count + 3 + 1 == data.size()) // there is a custom color 
             {
-                color = vec3{1.f, 1.f, 1.f};
+                //Data stores RGB in a [0, 255] range
+                color.x = data[data.size() - 3] / 255.f;
+                color.y = data[data.size() - 2] / 255.f;
+                color.z = data[data.size() - 1] / 255.f;
             }
-            colors.push_back(color.normalise());
 
-            //We're done loading Face data
-            if (colors.size() == faceCount)
-                section = Section::END;
+
+            int fan = 2 + 1;
+
+            while (fan < data.size() - 3)
+            {
+                Vertex v;
+                v.color = color;
+
+                //Fan base is at 1 instead of 0
+                v.position = data[1]; 
+                vertices.push_back(v);
+
+                v.position = data[fan - 1];
+                vertices.push_back(v);
+
+                v.position = data[fan];
+                vertices.push_back(v);
+
+                fan++;
+            }
+            faceRead++;
+            if (faceRead >= faceCount)
+                section = END;
         }
         break;
         }
     }
-    this->positions = positions;
-    this->colors = colors;
-    this->indices = indices;
+    normalize_vertices(vertices);
+    this->vertices = vertices;
 }
 
+
+
+//OBJ parser
 void Mesh::load_obj_file(const std::string& path)
 {
-    struct Vertex {
-        unsigned int v0,  v1,  v2; // 3 positions
-        unsigned int vt0, vt1, vt2;// 3 texCoord
-        unsigned int vn0, vn1, vn2;// 3 normals
-    };
-
     std::ifstream file(path);
     if (!file.is_open())
         return;
-    
+
+    //File data
     std::vector<vec3> positions;
-    std::vector<vec3> normals;
-    std::vector<vec2> uvs;
+    std::vector<vec3> normals; // unused
+    std::vector<vec2> uvs;     // unused
 
-    //OBJ index data
     std::vector<Vertex> vertices;
-
 
     std::string line;
     while (std::getline(file, line))
     {
         std::istringstream stream(line);
-
         std::string header;
         if (std::getline(stream, header, ' '))
         {
@@ -307,10 +331,10 @@ void Mesh::load_obj_file(const std::string& path)
             //Position handling
             if (header == "v")
             {
-                vec3 position;
-                if (stream >> position.x >> position.y >> position.z)
+                vec3 vertex;
+                if (__read_vec3(stream, vertex))
                 {
-                    positions.push_back(position);
+                    positions.push_back(vertex);
                     continue;
                 }
             }
@@ -319,7 +343,7 @@ void Mesh::load_obj_file(const std::string& path)
             if (header == "vn")
             {
                 vec3 normal;
-                if (stream >> normal.x >> normal.y >> normal.z)
+                if (__read_vec3(stream, normal))
                 {
                     normals.push_back(normal);
                     continue;
@@ -330,7 +354,7 @@ void Mesh::load_obj_file(const std::string& path)
             if (header == "vt")
             {
                 vec2 uv;
-                if (stream >> uv.x >> uv.y)
+                if (__read_vec2(stream, uv))
                 {
                     uvs.push_back(uv);
                     continue;
@@ -339,98 +363,72 @@ void Mesh::load_obj_file(const std::string& path)
 
             if (header == "f")
             {
-                Vertex vertex;
-                //Read first vertex info
-                while (stream.peek() == ' ') stream.ignore();
-                __obj_read_vertex_info(stream, vertex.v0, vertex.vt0, vertex.vn0);
+                unsigned int v  = 0;
+                unsigned int vn = 0;
+                unsigned int vt = 0;
 
-                //Read second vertex info
-                while (stream.peek() == ' ') stream.ignore();
-                __obj_read_vertex_info(stream, vertex.v1, vertex.vt1, vertex.vn1);
+                Vertex v0;
+                v0.color = vec3(1, 1, 1); // white by default
+                stream >> v;
+                if (!stream.fail()) v0.position = positions[v - 1];
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vt;
+                    //TODO : use vt
+                }
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vn;
+                    //TODO : use vn
+                }
+                vertices.push_back(v0);
 
-                //Read third vertex info
-                while (stream.peek() == ' ') stream.ignore();
-                __obj_read_vertex_info(stream, vertex.v2, vertex.vt2, vertex.vn2);
+                Vertex v1;
+                v1.color = vec3(1, 1, 1); // white by default
+                stream >> v;
+                if (!stream.fail()) v1.position = positions[v - 1];
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vt;
+                    //TODO : use vt
+                }
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vn;
+                    //TODO : use vn
+                }
+                vertices.push_back(v1);
 
-                vertices.push_back(vertex);
+                Vertex v2;
+                v2.color = vec3(1, 1, 1); // white by default
+                stream >> v;
+                if (!stream.fail()) v2.position = positions[v - 1];
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vt;
+                    //TODO : use vt
+                }
+                if (stream.peek() == '/')
+                {
+                    stream.ignore(1, '/');
+                    stream >> vn;
+                    //TODO : use vn
+                }
+                vertices.push_back(v2);
                 continue;
             }
         }
     }
     file.close();
 
-    //Clear the Mesh
-    this->positions.clear();
-    this->normals.clear();
-    this->uvs.clear();
-
-    //preallocate memory
-    this->positions = positions;
-    this->normals = normals;
-    this->uvs = uvs;
-
-    //good enough but it's a total mess
-    for (auto& vertex : vertices)
-    {
-        this->indices.push_back(vertex.v0 - 1);
-        this->indices.push_back(vertex.v1 - 1);
-        this->indices.push_back(vertex.v2 - 1);
-    }
+    normalize_vertices(vertices);
+    this->vertices = vertices;
 }
 
 
-vec3 Mesh::compute_centroid()
-{
-    float area = 0;
-    vec3 centroid = {0, 0, 0};
-    int tCount = indices.size();
-    for (int t = 0; t < tCount; t += 3)
-    {
-        vec3 vertex0 = positions[t + 0];
-        vec3 vertex1 = positions[t + 1];
-        vec3 vertex2 = positions[t + 2];
-        vec3 edge1 = vertex1 - vertex0;
-        vec3 edge2 = vertex2 - vertex0;
-        //Compute triangle Centroid & Area
-        vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3;
-        float tArea = 0.5 * edge1.cross(edge2).length();
-
-        //Sum
-        centroid += tArea * tCentroid;
-        area += tArea;
-    }
-    return centroid /= area;
-}
-
-
-void Mesh::normalize()
-{
-    vec3 min, max;
-    
-    min.x = std::numeric_limits<float>::max();
-    min.y = std::numeric_limits<float>::max();
-    min.z = std::numeric_limits<float>::max();
-    
-    max.x = std::numeric_limits<float>::min();
-    max.y = std::numeric_limits<float>::min();
-    max.z = std::numeric_limits<float>::min();
-    
-    for (vec3 v : positions)
-    {
-        //Update min
-        if (v.x < min.x) min.x = v.x;
-        if (v.y < min.y) min.y = v.y;
-        if (v.z < min.z) min.z = v.z;
-        //Update max
-        if (v.x > max.x) max.x = v.x;
-        if (v.y > max.y) max.y = v.y;
-        if (v.z > max.z) max.z = v.z;
-    }
-    vec3 min2max = max - min;
-
-    //Normalize every vertex into the [-1;1] space
-    for (int v = 0; v < positions.size(); v++)
-    {
-        positions[v] = 2 * (positions[v] - min) / min2max - 1;
-    }
-}
+Mesh::~Mesh() {}

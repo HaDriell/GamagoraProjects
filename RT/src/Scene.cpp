@@ -24,7 +24,7 @@ HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 
 vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, const HitResult& hit)
 {
-    vec3 htl = (light.position - hit.hitPoint).normalise();
+    vec3 htl = (light.position - hit.hitPoint).normalize();
     float lightDistance2 = light.position.distance2(hit.hitPoint);
 
     HitResult light_hit = scene.raycast(hit.hitPoint + hit.normal * scene.bias, htl);
@@ -86,7 +86,6 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
         //Direct illumination
         vec3 illumination = get_surface_illumination(scene, hit, entropy);
         color += illumination * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
-        
         //Indirect illumination
         //TODO
     }
@@ -102,7 +101,7 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
     {
         //TODO
         vec3 reflection_position = hit.hitPoint + hit.normal * scene.bias;
-        vec3 reflection_direction = direction.reflect(hit.normal).normalise();
+        vec3 reflection_direction = direction.reflect(hit.normal).normalize();
         color += material.reflectiveness * trace(scene, reflection_position, reflection_direction, level + 1, entropy);
     }
 
@@ -121,9 +120,9 @@ void Scene::render()
     //Build the R matrix
     mat4 rotation = mat4::RotationYXZ(camera.rotation);
 
-    vec3 u = (rotation * vec3::X).normalise();
-    vec3 v = (rotation * vec3::Y).normalise();
-    vec3 w = (rotation * vec3::Z).normalise();
+    vec3 u = (rotation * vec3::X).normalize();
+    vec3 v = (rotation * vec3::Y).normalize();
+    vec3 w = (rotation * vec3::Z).normalize();
 
     std::cout << "Camera Settings" << std::endl;
     std::cout << "u: " << u << std::endl;
@@ -148,7 +147,7 @@ void Scene::render()
                 float dy = (y + dist_y(entropy) - camera.framebuffer.height / 2);
 
                 vec3 direction = (u * dx) + (v * dy) + (w * focalDistance);
-                direction = direction.normalise();
+                direction = direction.normalize();
 
                 color += trace(*this, camera.position, direction, 0, entropy) / (float) pixel_sampling;
             }

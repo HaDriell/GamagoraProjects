@@ -205,7 +205,7 @@ float vec3::length2() const
     return x*x + y*y + z*z;
 }
 
-vec3 vec3::normalise() const
+vec3 vec3::normalize() const
 {
     float len = length();
     if (len)

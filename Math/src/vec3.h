@@ -23,7 +23,7 @@ struct vec3
     
     float length() const;
     float length2() const;
-    vec3 normalise() const;
+    vec3 normalize() const;
     float distance(const vec3& v) const;
     float distance2(const vec3& v) const;
     float dot(const vec3& v) const;

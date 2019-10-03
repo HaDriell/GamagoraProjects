@@ -180,7 +180,7 @@ float vec2::length2() const
     return x * x + y * y;
 }
 
-vec2 vec2::normalise() const
+vec2 vec2::normalize() const
 {
     float len = length();
     if (len)

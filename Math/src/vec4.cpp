@@ -218,7 +218,7 @@ float vec4::length2() const
     return x*x + y*y + z*z + w*w;
 }
 
-vec4 vec4::normalise() const
+vec4 vec4::normalize() const
 {
     float len = length();
     if (len)

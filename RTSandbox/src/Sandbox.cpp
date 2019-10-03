@@ -6,16 +6,18 @@ int main()
 {
     Scene scene;
     scene.bias = 1;
-    scene.pixel_sampling = 5;
-    scene.light_sampling = 100;
+    scene.pixel_sampling = 1;
+    scene.light_sampling = 10;
     scene.camera.fov = 60;
 
     //Camera positionning
-    scene.camera.position = vec3(0, 0, -200);
+    scene.camera.position = vec3(0, 50, -100);
+    scene.camera.rotation = vec3(0, -10, 0);
 
     //Pure Lighting Setup 
-    Sphere* sun = scene.createSphere(vec3(0, 1e5, 0), 300);
-    sun->material = Material::Emissive(1e10, 1, 1, 1);
+    // Sphere* sun = scene.createSphere(vec3(0, 1e5, 0), 300);
+    // sun->material = Material::Emissive(1e10, 1, 1, 1);
+    scene.createLight(vec3(0, 100, -100), 1e5, vec3(1, 1, 1));
     
     //Instances Setup
     // Sphere* red = scene.createSphere(vec3(-100, 0, 0), 30);
@@ -38,38 +40,17 @@ int main()
     // chrome->material |= Material::Diffuse(0.5, 0.5, 0.5, 0.5);
 
     Mesh* lapin = scene.createMesh();
-    lapin->load_obj_file("Love.obj"); 
-    lapin->transform.set_translation(0, -60, 0);
-
-    // lapin->transform.scale(30, 30, 30);
-    // lapin->normalize();
-
+    lapin->load_obj_file("cube.obj");
+    lapin->transform.set_translation(0, 0, 0);
+    lapin->transform.set_scaling(10, 10, 10);
     lapin->material |= Material::Diffuse(1, 1, 1, 1);
-
-    vec3 min = vec3(std::numeric_limits<float>::max());
-    vec3 max = vec3(std::numeric_limits<float>::min());
-    for (vec3 p : lapin->positions)
-    {
-        vec3 tp = lapin->transform.multiply(p);
-        if (min.x > tp.x) min.x = tp.x;
-        if (min.y > tp.y) min.y = tp.y;
-        if (min.z > tp.z) min.z = tp.z;
-
-        if (max.x < tp.x) max.x = tp.x;
-        if (max.y < tp.y) max.y = tp.y;
-        if (max.z < tp.z) max.z = tp.z;
-
-        std::cout << "Local Vertex " << p <<  " Global Vertex " << tp << std::endl;
-    }
-
-    std::cout << "AABB - " << min << " <-> " << max << std::endl;
 
     scene.render();
     scene.camera.framebuffer.save("RenderClassic.png");
 
     for (int i = 0; i < 10; i++)
     {
-        scene.camera.position.z += 20;
+        lapin->transform.rotate(0, 36, 0);
 
         scene.render();
         std::stringstream filename;

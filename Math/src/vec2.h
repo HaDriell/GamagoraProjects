@@ -15,7 +15,7 @@ struct vec2
     
     float length() const;
     float length2() const;
-    vec2 normalise() const;
+    vec2 normalize() const;
     float distance(const vec2& v) const;
     float distance2(const vec2& v) const;
     float dot(const vec2& v) const;
