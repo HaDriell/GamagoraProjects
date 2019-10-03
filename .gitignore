@@ -1,8 +1,5 @@
-Makefile
 ChuteLibre.make
 .vscode/*
-ChuteLibre/Makefile
-Glad/Makefile
-RT/Makefile
-RTSandbox/Makefile
-RTTest/Makefile
+**/bin
+**/obj
+**/Makefile
