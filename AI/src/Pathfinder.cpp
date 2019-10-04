@@ -3,68 +3,58 @@
 #include <limits>
 #include <algorithm>
 
-float distanceSquared(const Point& a, const Point& b)
+
+bool operator==(const DTile& a, const DTile& b)
 {
-    float dx = a.x - b.x;
-    float dy = a.y - b.y;
-    return dx*dx + dy*dy;
+    return a.position == b.position
+        && a.cost == b.cost
+        && a.weight == b.weight
+        && a.parent == b.parent
+        && a.visited == b.visited;
 }
 
-bool operator==(const Point& a, const Point& b)
-{
-    return a.x == b.x && a.y == b.y;
-}
-
-bool operator!=(const Point& a, const Point& b)
+bool operator!=(const DTile& a, const DTile& b)
 {
     return !(a == b);
 }
 
-std::ostream& operator<<(std::ostream& os, const Point& p)
-{
-    os << "(" << p.x << ", " << p.y << ")";
-    return os;
-}
+
+
 
 /* Dijkstra map implementation */
-std::vector<Point> find_path_dijkstra(const TerrainMap& terrain, const Point& start, const Point& end)
+std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& start, const vec2& end)
 {
-    std::vector<Point> path;
+    std::vector<vec2> path;
 
-    struct Tile
+    DMap map = DMap(weightmap.get_width(), weightmap.get_height());
+    for (unsigned int y = 0; y < map.get_height(); y++)
     {
-        Point position;
-        float weight = std::numeric_limits<float>::max();
-        float cost = std::numeric_limits<float>::max();
-        bool visited = false;
-        Tile* parent = nullptr;
-    };
-
-    TileMap<Tile> dmap(terrain.width, terrain.height);
-    for (unsigned int y = 0; y < terrain.height; y++)
-    {
-        for (unsigned int x = 0; x < terrain.width; x++)
+        for (unsigned int x = 0; x < map.get_width(); x++)
         {
-            Tile* t = dmap.get(x, y);
-            t->position = Point{(float) x, (float) y};
-            t->weight = *( terrain.get(x, y) );
+            DTile tile;
+            tile.position = vec2(x, y);
+            tile.weight   = weightmap.get(x, y);
+            map.set(x, y, tile);
         }
     }
 
-    std::vector<Tile*> frontier;
+    std::vector<DTile> frontier;
 
     //Initialise Dijkstra
-    Tile* parent = dmap.get(start);
-    parent->visited = true;
-    parent->cost = 0;
+    DTile parent = map.get(start);
+
+    if (parent == map.NOTHING) // Cannot find a path for a node that isn't found in the map in the first place
+        return path;
+    parent.visited = true;
+    parent.cost = 0;
     frontier.push_back(parent);
 
     //Explore
-    while(!frontier.empty() && parent->position != end)
+    while(!frontier.empty() && parent.position != end)
     {
         //Find shortest walked path to explore
-        auto found = std::min_element(frontier.begin(), frontier.end(), [] (Tile* a, Tile* b){
-            return a->cost < b->cost;
+        auto found = std::min_element(frontier.begin(), frontier.end(), [] (DTile a, DTile b){
+            return a.cost < b.cost;
         });
         parent = *found;
         frontier.erase(found);
@@ -79,21 +69,21 @@ std::vector<Point> find_path_dijkstra(const TerrainMap& terrain, const Point& st
                     continue;
 
                 //Compute neighbor position
-                Point position = parent->position;
+                vec2 position = parent.position;
                 position.x += x;
                 position.y += y;
 
-                Tile* next = dmap.get(position);
-                if (next) // protection against out of bound coords
+                DTile next = map.get(position);
+                if (next != map.NOTHING) // protection against out of bound
                 {
-                    float cost = parent->cost + parent->weight * (x == 0 || y == 0 ? 1 : 1.41);
-                    if (next->cost > cost)
+                    float cost = parent.cost + parent.weight * (x == 0 || y == 0 ? 1 : 1.41);
+                    if (next.cost > cost)
                     {
-                        next->cost = cost;
-                        next->parent = parent;
-                        if (!next->visited)
+                        next.cost = cost;
+                        next.parent = parent.position;
+                        if (!next.visited)
                         {
-                            next->visited = true;
+                            next.visited = true;
                             frontier.push_back(next);
                         }
                     }
@@ -103,12 +93,12 @@ std::vector<Point> find_path_dijkstra(const TerrainMap& terrain, const Point& st
     }
 
     //Backtrack
-    Tile* origin = dmap.get(start);
-    Tile* track = dmap.get(end);
-    while (track && track != origin)
+    DTile origin = map.get(start);
+    DTile track = map.get(end);
+    while (track != map.NOTHING && track.position != origin.position)
     {
-        path.push_back(track->position);
-        track = track->parent;
+        path.push_back(track.position);
+        track = map.get(track.parent);
     }
     std::reverse(path.begin(), path.end());
 
@@ -116,13 +106,14 @@ std::vector<Point> find_path_dijkstra(const TerrainMap& terrain, const Point& st
 }
 
 /* A* map implementation */
-std::vector<Point> find_path_a_star(const TerrainMap& terrain, const Point& start, const Point& end)
+/*
+std::vector<vec2> find_path_a_star(const TerrainMap& terrain, const vec2& start, const vec2& end)
 {
-    std::vector<Point> path;
+    std::vector<vec2> path;
     
     struct Tile
     {
-        Point position;
+        vec2 position;
         float weight;
         float g;// distance with start ( parent.g + parent.weight )
         float f;// f = g + h
@@ -137,7 +128,7 @@ std::vector<Point> find_path_a_star(const TerrainMap& terrain, const Point& star
         for (unsigned int x = 0; x < terrain.width; x++)
         {
             Tile* t = map.get(x, y);
-            t->position = Point{(float) x, (float) y};
+            t->position = vec2{(float) x, (float) y};
             t->g = std::numeric_limits<float>::max();
             t->parent = nullptr;
             t->weight = (*terrain.get(x, y));
@@ -177,7 +168,7 @@ std::vector<Point> find_path_a_star(const TerrainMap& terrain, const Point& star
                 if (x == 0 && y == 0)
                     continue;
                 
-                Point position = current->position;
+                vec2 position = current->position;
                 position.x += x;
                 position.y += y;
                 Tile* tile = map.get(position);
@@ -225,3 +216,5 @@ std::vector<Point> find_path_a_star(const TerrainMap& terrain, const Point& star
 
     return path;
 }
+
+//*/

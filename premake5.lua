@@ -171,10 +171,44 @@ workspace "TP"
             "%{prj.name}/src/**"
         }
         includedirs {
-            "D:/msys64/mingw64/include"
+            "D:/msys64/mingw64/include",
+            "Math/src"
         }
         libdirs {
             "D:/msys64/mingw64/lib"
         }
         links {
+            "Math"
+        }
+
+    -- AI Showoff
+    project "Gamagochi"
+        location "%{prj.name}"
+        language "C++"
+        architecture "x64"
+        kind "ConsoleApp"
+        cppdialect "gnu++17"
+        files {
+            "%{prj.name}/src/**"
+        }
+        includedirs {
+            "D:/msys64/mingw64/include",
+            "AI/src",
+            "Math/src",
+            "Util/src",
+        }
+        libdirs {
+            "D:/msys64/mingw64/lib"
+        }
+        links {
+            "AI",
+            "Math",
+            "Util",
+            "sfml-system",
+            "sfml-window",
+            "sfml-graphics",
+            "sfml-audio",
+        }
+        defines {
+            "_WIN32"
         }
