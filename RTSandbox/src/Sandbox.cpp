@@ -17,7 +17,7 @@ int main()
     //Pure Lighting Setup 
     // Sphere* sun = scene.createSphere(vec3(0, 1e5, 0), 300);
     // sun->material = Material::Emissive(1e10, 1, 1, 1);
-    scene.createLight(vec3(0, 100, -100), 1e5, vec3(1, 1, 1));
+    scene.createLight(vec3(0, 100, -100), 1e4, vec3(1, 1, 1));
     
     //Instances Setup
     // Sphere* red = scene.createSphere(vec3(-100, 0, 0), 30);
@@ -41,9 +41,13 @@ int main()
 
     Mesh* lapin = scene.createMesh();
     lapin->load_obj_file("cube.obj");
+    lapin->load_obj_file("Love.obj");
     lapin->transform.set_translation(0, 0, 0);
-    lapin->transform.set_scaling(10, 10, 10);
+    lapin->transform.set_scaling(20, 20, 20);
     lapin->material |= Material::Diffuse(1, 1, 1, 1);
+
+    lapin->debug();
+    std::cin.get();
 
     scene.render();
     scene.camera.framebuffer.save("RenderClassic.png");

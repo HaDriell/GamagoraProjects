@@ -1,6 +1,7 @@
 #include "Mesh.h"
 
 #include <limits>
+#include <math.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -29,8 +30,10 @@ bool __read_vec2(std::istringstream& stream, vec2& v)
 
 void normalize_vertices(std::vector<Vertex>& vertices)
 {
-    vec3 centroid;
+    std::cout << "Normalizing Vertices" << std::endl;
+    vec3 centroid = vec3();
     float area = 0;
+
 
     int triangle = 0;
     while (triangle < vertices.size())
@@ -42,7 +45,7 @@ void normalize_vertices(std::vector<Vertex>& vertices)
         vec3 edge2 = vertex2 - vertex0;
 
         //Compute triangle Centroid & Area
-        vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3;
+        vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3.f;
         float tArea = 0.5 * edge1.cross(edge2).length();
 
         //Sum
@@ -50,6 +53,8 @@ void normalize_vertices(std::vector<Vertex>& vertices)
         area += tArea;
     }
     centroid /= area;
+
+    std::cout << centroid << std::endl;
 
     //Center Mesh around origin
     for (Vertex& vertex : vertices)
@@ -74,6 +79,17 @@ void normalize_vertices(std::vector<Vertex>& vertices)
         {
             vertex.position *= scale;
         }
+    }
+}
+
+void Mesh::debug() const
+{
+    std::cout << "Mesh vertex count: " << vertices.size() << std::endl;
+    int show = vertices.size();
+    if (show > 10) show = 10;
+    for (int i = 0; i < show; i++)
+    {
+        std::cout << vertices[i].position << std::endl;
     }
 }
 
@@ -121,14 +137,19 @@ HitResult intersect_triangle(const vec3& position, const vec3& direction, const 
 HitResult Mesh::intersect(const vec3& position, const vec3& direction)
 {
     HitResult hit;
+    hit.distance = std::numeric_limits<float>::max();
 
     int triangle = 0;
-    while (!hit.hit && triangle < vertices.size())
+    while (triangle < vertices.size())
     {
         vec3 v0 = vertices[triangle++].position;
         vec3 v1 = vertices[triangle++].position;
         vec3 v2 = vertices[triangle++].position;
-        hit = intersect_triangle(position, direction, v0, v1, v2);
+        HitResult tHit = intersect_triangle(position, direction, v0, v1, v2);
+        if (tHit.hit && tHit.distance < hit.distance)
+        {
+            hit = tHit;
+        }
     }
 
     if (hit.hit)
