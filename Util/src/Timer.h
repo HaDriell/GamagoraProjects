@@ -12,5 +12,5 @@ class Timer
 
     public:
         void reset();
-        float elaped();
+        float elapsed() const;
 };

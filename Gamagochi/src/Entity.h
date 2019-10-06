@@ -5,6 +5,7 @@
 
 enum EntityType
 {
+    SYSTEM,
     GAMAGOCHI,
     POOP,
     FRUIT
@@ -17,11 +18,11 @@ struct Entity
 
 //In Game Update & Render "callbacks"
 public:
-    Entity(EntityType type);
+    Entity(EntityType type, vec2 position = vec2());
     virtual ~Entity();
-    virtual void event(const Game& game, const sf::Event& event) = 0;
-    virtual void udpate(const Game& game) = 0;
-    virtual void render(const Game& game) = 0;
+    virtual void event(Game& game, const sf::Event& event) = 0;
+    virtual void udpate(Game& game) = 0;
+    virtual void render(Game& game) = 0;
 
 
 //In Game Destruction API

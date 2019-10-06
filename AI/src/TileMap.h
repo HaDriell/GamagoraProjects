@@ -13,7 +13,6 @@ private:
     std::vector<T> tiles;
 
 public:
-    static const T NOTHING;
 
     TileMap(unsigned int width = 1, unsigned int height = 1)
     {
@@ -38,16 +37,17 @@ public:
     }
 
     //TODO : have to use a bool to filter the get errors. sad but it's way too late to continue right now
-    T get(unsigned int x, unsigned int y) const
+    bool get(unsigned int x, unsigned int y, T& out) const
     {
-        if (x >= width) return NOTHING;
-        if (y >= height) return NOTHING;
-        return tiles[x + y * width];
+        if (x >= width) return false;
+        if (y >= height) return false;
+        out = tiles[x + y * width];
+        return true;
     }
 
-    T get(vec2 p) const
+    bool get(vec2 p, T& out) const
     {
-        return get(p.x, p.y);
+        return get(p.x, p.y, out);
     }
 
     void set(unsigned int x, unsigned int y, const T& value)
@@ -56,7 +56,7 @@ public:
         if (y >= height) return;
         tiles[x + y * width] = value;
     }
-
+    
     void set(vec2 p, const T& value)
     {
         set(p.x, p.y, value);

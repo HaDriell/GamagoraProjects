@@ -1,7 +1,7 @@
 #include "Entity.h"
 
 
-Entity::Entity(EntityType type) : type(type) {}
+Entity::Entity(EntityType type, vec2 position) : type(type), position(position) {}
 
 Entity::~Entity() {}
 

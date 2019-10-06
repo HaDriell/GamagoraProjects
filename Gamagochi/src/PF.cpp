@@ -3,9 +3,20 @@
 #include <SFML/Window.hpp>
 
 
-PF::PF() : Entity(GAMAGOCHI) {}
+PF::PF() : Entity(SYSTEM), astar(false) {}
 
 PF::~PF() {}
+
+
+void PF::use_astar()
+{
+    astar = true;
+}
+
+void PF::use_dijkstra()
+{
+    astar = false;
+}
 
 void PF::computePath(const Game& game)
 {
@@ -16,49 +27,58 @@ void PF::computePath(const Game& game)
     {
         for (int y = 0; y < terrain.get_height(); y++)
         {
-            TerrainType type = terrain.get(x, y);
-            if (type == TerrainType::Grass)
-                map.set(x, y, 10);
-            if (type == TerrainType::Sand)
-                map.set(x, y, 14);
-            if (type == TerrainType::Rock)
-                map.set(x, y, 1000000);
+            TerrainType type;
+            if (terrain.get(x, y, type))
+            {
+                if (type == TerrainType::Grass)
+                    map.set(x, y, 10);
+                if (type == TerrainType::Sand)
+                    map.set(x, y, 14);
+                if (type == TerrainType::Rock)
+                    map.set(x, y, 1000000);
+            }
         }
     }
 
     //Update the Path
-    path = find_path_dijkstra(map, start, end);
+    if (astar)  path = find_path_a_star(map, start, end);
+    else        path = find_path_dijkstra(map, start, end);
 }
 
 
-void PF::event(const Game& game, const sf::Event& event)
+void PF::event(Game& game, const sf::Event& event)
 {
-    if (event.type == sf::Event::MouseButtonPressed)
+    if (event.type == sf::Event::MouseMoved)
     {
-        if (event.mouseButton.button == sf::Mouse::Left)
+        hoveredTile = game.asTile(event.mouseMove.x, event.mouseMove.y);
+    }
+
+    if (event.type == sf::Event::KeyPressed)
+    {
+        if (event.key.code == sf::Keyboard::A)
+            astar = !astar;
+        
+        if (event.key.code == sf::Keyboard::Z)
         {
-            start = game.asTile(event.mouseButton.x, event.mouseButton.y);
-            std::cout << "Start " << start << std::endl;
-            std::cout << "End   " << end   << std::endl;
+            start = hoveredTile;
             computePath(game);
         }
 
-        if (event.mouseButton.button == sf::Mouse::Right)
+        if (event.key.code == sf::Keyboard::E)
         {
-            end = game.asTile(event.mouseButton.x, event.mouseButton.y);
-            std::cout << "Start " << start << std::endl;
-            std::cout << "End   " << end   << std::endl;
+            end = hoveredTile;
             computePath(game);
         }
     }
+
 }
 
-void PF::udpate(const Game& game)
+void PF::udpate(Game& game)
 {
     //no update
 }
 
-void PF::render(const Game& game)
+void PF::render(Game& game)
 {
     sf::RectangleShape tile;
 
@@ -68,20 +88,20 @@ void PF::render(const Game& game)
     tile.setOutlineColor(sf::Color::Black);
     for (vec2 p : path)
     {
-        vec2 tp = game.asTile(p.x, p.y);
+        vec2 tp = game.asScreenCoord(p.x, p.y);
         tile.setPosition(tp.x, tp.y);
         game.getWindow().draw(tile);
     }
 
     //Render Start
     tile.setFillColor(sf::Color::Cyan);
-    vec2 tstart = game.asTile(start.x, start.y);
+    vec2 tstart = game.asScreenCoord(start.x, start.y);
     tile.setPosition(tstart.x, tstart.y);
     game.getWindow().draw(tile);
     
     //Render End
-    tile.setFillColor(sf::Color::Cyan);
-    vec2 tend = game.asTile(end.x, end.y);
+    tile.setFillColor(sf::Color::Red);
+    vec2 tend = game.asScreenCoord(end.x, end.y);
     tile.setPosition(tend.x, tend.y);
     game.getWindow().draw(tile);
 }

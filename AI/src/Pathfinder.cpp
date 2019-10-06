@@ -18,6 +18,23 @@ bool operator!=(const DTile& a, const DTile& b)
     return !(a == b);
 }
 
+bool operator==(const ATile& a, const ATile& b)
+{
+    return a.position == b.position
+        && a.g == b.g
+        && a.f == b.f
+        && a.weight == b.weight
+        && a.parent == b.parent
+        && a.visited == b.visited;
+}
+
+
+bool operator!=(const ATile& a, const ATile& b)
+{
+    return !(a == b);
+}
+
+
 
 
 
@@ -33,7 +50,7 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
         {
             DTile tile;
             tile.position = vec2(x, y);
-            tile.weight   = weightmap.get(x, y);
+            weightmap.get(x, y, tile.weight);
             map.set(x, y, tile);
         }
     }
@@ -41,10 +58,10 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
     std::vector<DTile> frontier;
 
     //Initialise Dijkstra
-    DTile parent = map.get(start);
-
-    if (parent == map.NOTHING) // Cannot find a path for a node that isn't found in the map in the first place
+    DTile parent;
+    if(!map.get(start, parent)) // no path found
         return path;
+
     parent.visited = true;
     parent.cost = 0;
     frontier.push_back(parent);
@@ -53,7 +70,7 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
     while(!frontier.empty() && parent.position != end)
     {
         //Find shortest walked path to explore
-        auto found = std::min_element(frontier.begin(), frontier.end(), [] (DTile a, DTile b){
+        auto found = std::min_element(frontier.begin(), frontier.end(), [] (const DTile& a, const DTile& b){
             return a.cost < b.cost;
         });
         parent = *found;
@@ -73,14 +90,15 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
                 position.x += x;
                 position.y += y;
 
-                DTile next = map.get(position);
-                if (next != map.NOTHING) // protection against out of bound
+                DTile next;
+                if (map.get(position, next))
                 {
                     float cost = parent.cost + parent.weight * (x == 0 || y == 0 ? 1 : 1.41);
                     if (next.cost > cost)
                     {
                         next.cost = cost;
                         next.parent = parent.position;
+                        map.set(position, next);
                         if (!next.visited)
                         {
                             next.visited = true;
@@ -93,12 +111,15 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
     }
 
     //Backtrack
-    DTile origin = map.get(start);
-    DTile track = map.get(end);
-    while (track != map.NOTHING && track.position != origin.position)
+    DTile origin;
+    DTile track;
+    map.get(start, origin);
+    map.get(end, track);
+    while (track.position != origin.position)
     {
         path.push_back(track.position);
-        track = map.get(track.parent);
+        if (!map.get(track.parent, track))
+            break;
     }
     std::reverse(path.begin(), path.end());
 
@@ -106,54 +127,47 @@ std::vector<vec2> find_path_dijkstra(const WeightMap& weightmap, const vec2& sta
 }
 
 /* A* map implementation */
-/*
-std::vector<vec2> find_path_a_star(const TerrainMap& terrain, const vec2& start, const vec2& end)
+
+std::vector<vec2> find_path_a_star(const WeightMap& terrain, const vec2& start, const vec2& end)
 {
     std::vector<vec2> path;
-    
-    struct Tile
-    {
-        vec2 position;
-        float weight;
-        float g;// distance with start ( parent.g + parent.weight )
-        float f;// f = g + h
-        bool visited = false;
-        Tile* parent = nullptr;
-    };
 
     //build the Astar map (clean)
-    TileMap<Tile> map(terrain.width, terrain.height);
-    for (unsigned int y = 0; y < terrain.height; y++)
+    AMap map = AMap(terrain.get_width(), terrain.get_height());
+    for (unsigned int y = 0; y < map.get_height(); y++)
     {
-        for (unsigned int x = 0; x < terrain.width; x++)
+        for (unsigned int x = 0; x < map.get_width(); x++)
         {
-            Tile* t = map.get(x, y);
-            t->position = vec2{(float) x, (float) y};
-            t->g = std::numeric_limits<float>::max();
-            t->parent = nullptr;
-            t->weight = (*terrain.get(x, y));
+            ATile tile;
+            if (map.get(x, y, tile))
+            {
+                tile.position = vec2(x, y);
+                tile.g = std::numeric_limits<float>::max();
+                terrain.get(x, y, tile.weight);
+                map.set(x, y, tile);
+            }
         }
     }
 
-    std::vector<Tile*> openList;
-    std::vector<Tile*> closedList;
+    std::vector<ATile> openList;
+    std::vector<ATile> closedList;
 
     //Initialise openList
-    Tile* startTile = map.get(start);
-    startTile->g = 0;
-    startTile->f = startTile->g + distanceSquared(start, end);
-    startTile->parent = nullptr;
+    ATile startTile;
+    map.get(start, startTile);
+    startTile.g = 0;
+    startTile.f = startTile.g + start.distance2(end);
     openList.push_back(startTile);
 
     while (!openList.empty()) // might change
     {
-        auto found = std::min_element(openList.begin(), openList.end(), [] (Tile* a, Tile* b){
-            return a->f < b->f;
+        auto found = std::min_element(openList.begin(), openList.end(), [] (const ATile& a, const ATile& b){
+            return a.f < b.f;
         });
-        Tile* current = *found;
+        ATile current = *found;
 
-        //Target reached with a nearly optimal path !
-        if (current->position == end)
+        //Target reached with a heuristically optimal path !
+        if (current.position == end)
             break;
 
         openList.erase(found);
@@ -168,53 +182,56 @@ std::vector<vec2> find_path_a_star(const TerrainMap& terrain, const vec2& start,
                 if (x == 0 && y == 0)
                     continue;
                 
-                vec2 position = current->position;
+                vec2 position = current.position;
                 position.x += x;
                 position.y += y;
-                Tile* tile = map.get(position);
 
                 //Skip if tile is not found on the map (memory overflow protection)
-                if (!tile)
+                ATile tile;
+                if (!map.get(position, tile))
                     continue;
+                else
+                    std::cout << "Unable to find " << position << std::endl;
 
                 //Skip if tile is in closedList
-                if (std::find(closedList.begin(), closedList.end(), tile) != closedList.end())
+                if (std::find_if(closedList.begin(), closedList.end(), [&] (const ATile& t) { return t.position == tile.position; }) != closedList.end())
                     continue;
                 
                 //Compute cost to travel to tile
-                float weight = (current->weight + tile->weight) / 2;
+                float weight = (current.weight + tile.weight) / 2;
                 float distance = (x == 0 || y == 0) ? 1 :  1.41; // assume unit squares. Diagonals are more expensive
-                float cost = current->g + distance * weight;
+                float cost = current.g + distance * weight;
 
                 //Skip if Tile already has a better path
-                if (cost > tile->g)
+                if (tile.g < cost)
                     continue;
                 
                 //Update the tile to have current as a parent
-                tile->g = cost;
-                tile->f = cost + distanceSquared(tile->position, end);
-                tile->parent = current;
+                tile.g = cost;
+                tile.f = cost + tile.position.distance2(end);
+                tile.parent = current.position;
+                map.set(x, y, tile);
 
                 //Add tile to the openList if it's not in it already
-                if (std::find(openList.begin(), openList.end(), tile) == openList.end())
-                {
+                if (std::find_if(openList.begin(), openList.end(), [&](const ATile& t) { return t.position == tile.position; }) == openList.end())
                     openList.push_back(tile);
-                }
             }
         }
     }
 
     //Backtrack
-    Tile* origin = map.get(start);
-    Tile* track = map.get(end);
-    while (track && track != origin)
-    { 
-        path.push_back(track->position);
-        track = track->parent;
+    ATile origin;
+    ATile track;
+    map.get(start, origin);
+    map.get(end, track);
+    while (track.position != origin.position)
+    {
+        std::cout << "Path " << track.position << std::endl;
+        path.push_back(track.position);
+        if (!map.get(track.parent, track))
+            break;
     }
     std::reverse(path.begin(), path.end());
 
     return path;
 }
-
-//*/

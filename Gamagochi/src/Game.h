@@ -39,7 +39,8 @@ private:
 
 
 //Game data
-    Timer                   timer;
+    Timer                   frameTimer;
+    Timer                   upTimer;
     float                   deltaTime;
     Terrain*                terrain;
     Resources               resources;
@@ -49,14 +50,21 @@ private:
     void renderTerrain();
 
 public:
+    vec2 getMousePosition() const;
+    vec2 getMouseTile() const;
     vec2 asTile(int x, int y) const;
+    vec2 asScreenCoord(int x, int y) const;
     float getDeltaTime() const;
+    float getUpTime() const;
 
     Terrain& getTerrain() const;
+    Resources& getResources();
     sf::RenderWindow& getWindow() const;
     std::vector<Entity*>& getEntities();
+    std::vector<Entity*> getFruits() const;
+    std::vector<Entity*> getPoops() const;
 
-    Resources& getResources();
+    void spawnPoop(int x, int y) const;
 
 
 
