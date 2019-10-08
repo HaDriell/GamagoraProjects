@@ -149,7 +149,8 @@ workspace "TP"
         includedirs {
             "D:/msys64/mingw64/include",
             "RT/src",
-            "Math/src"
+            "Math/src",
+            "Util/src"
         }
         libdirs {
             "D:/msys64/mingw64/lib"
@@ -157,9 +158,11 @@ workspace "TP"
         links {
             "RT",
             "freeimage",
-            "Math"
+            "Math",
+            "Util"
         }
         linkoptions { "-fopenmp" }
+
     -- AI is containing mostly all the tools I had to develop during my AI courses
     project "AI"
         location "%{prj.name}"

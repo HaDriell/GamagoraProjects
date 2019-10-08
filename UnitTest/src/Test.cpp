@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include "TestMath.h"
 
 // All broken
 // #include "TestMath.h"
@@ -10,7 +11,8 @@
 int main()
 {
     std::cout << "Begining tests" << std::endl;
-    // test_math();
+    test_math();
     // test_ai();
-    std::cout << "Tests passed !" << std::endl;
+    std::cout << "Ending tests" << std::endl;
+    std::cin.get();
 }

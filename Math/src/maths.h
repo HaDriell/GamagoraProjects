@@ -4,7 +4,14 @@
 //TODO : https://github.com/TheCherno/Sparky/tree/master/Sparky-core/src/sp/maths
 
 #include <math.h>
+#include <limits>
+
 #include "util.h"
+#include "intersect.h"
+
+#include "AABB.h"
+#include "Triangle.h"
+#include "Sphere.h"
 
 #include "vec2.h"
 #include "vec3.h"

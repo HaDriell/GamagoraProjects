@@ -1,10 +1,9 @@
 #include "Mesh.h"
 
-#include <limits>
-#include <math.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
 
 //Useful Parsing functions
 bool __read_unsigned_int(std::istringstream& stream, unsigned int& value)
@@ -30,7 +29,6 @@ bool __read_vec2(std::istringstream& stream, vec2& v)
 
 void normalize_vertices(std::vector<Vertex>& vertices)
 {
-    std::cout << "Normalizing Vertices" << std::endl;
     vec3 centroid = vec3();
     float area = 0;
 
@@ -54,8 +52,6 @@ void normalize_vertices(std::vector<Vertex>& vertices)
     }
     centroid /= area;
 
-    std::cout << centroid << std::endl;
-
     //Center Mesh around origin
     for (Vertex& vertex : vertices)
     {
@@ -63,7 +59,7 @@ void normalize_vertices(std::vector<Vertex>& vertices)
     }
 
     //Compute the max X, Y and Z
-    vec3 max = vec3(std::numeric_limits<float>::min());   
+    vec3 max = vec3(std::numeric_limits<float>::min());
     for (Vertex& vertex : vertices)
     {
         max.x = std::max(max.x, vertex.position.x);
@@ -80,91 +76,6 @@ void normalize_vertices(std::vector<Vertex>& vertices)
             vertex.position *= scale;
         }
     }
-}
-
-void Mesh::debug() const
-{
-    std::cout << "Mesh vertex count: " << vertices.size() << std::endl;
-    int show = vertices.size();
-    if (show > 10) show = 10;
-    for (int i = 0; i < show; i++)
-    {
-        std::cout << vertices[i].position << std::endl;
-    }
-}
-
-
-//https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
-HitResult intersect_triangle(const vec3& position, const vec3& direction, const vec3& vertex0, const vec3& vertex1, const vec3& vertex2)
-{
-    HitResult hit;
-
-    const float EPSILON = 1e-6;
-    vec3 edge1 = vertex1 - vertex0;
-    vec3 edge2 = vertex2 - vertex0;
-
-    vec3 h, s, q;
-    float a, f, u, v;
-
-    h = direction.cross(edge2);
-    a = edge1.dot(h);
-    if (a > -EPSILON && a < EPSILON)
-        return hit;
-
-    f = 1.0/a;
-    s = position - vertex0;
-    u = f * (s.dot(h));
-    if (u < 0.0 || u > 1.0)
-        return hit;
-
-    q = s.cross(edge1);
-    v = f * direction.dot(q);
-    if (v < 0.0 || u + v > 1.0)
-        return hit;
-    
-    float t = f * edge2.dot(q);
-    if (t > EPSILON)
-    {
-        hit.hit = true;
-        hit.distance = t;
-        hit.hitPoint = position + direction * t;
-        hit.normal   = edge1.cross(edge2).normalize();
-    }
-
-    return hit;
-}
-
-HitResult Mesh::intersect(const vec3& position, const vec3& direction)
-{
-    HitResult hit;
-    hit.distance = std::numeric_limits<float>::max();
-
-    int triangle = 0;
-    while (triangle < vertices.size())
-    {
-        vec3 v0 = vertices[triangle++].position;
-        vec3 v1 = vertices[triangle++].position;
-        vec3 v2 = vertices[triangle++].position;
-        HitResult tHit = intersect_triangle(position, direction, v0, v1, v2);
-        if (tHit.hit && tHit.distance < hit.distance)
-        {
-            hit = tHit;
-        }
-    }
-
-    if (hit.hit)
-    {
-        hit.instance = this;
-        return hit;
-    }
-
-    return hit;
-}
-
-vec3 Mesh::get_random_point_on_surface(std::default_random_engine& random, float bias)
-{
-    //TODO : find a random triangle on surface 
-    return vec3();
 }
 
 void Mesh::load_off_file(const std::string& path)
@@ -382,65 +293,43 @@ void Mesh::load_obj_file(const std::string& path)
                 }
             }
 
+            //Face index parsing
             if (header == "f")
             {
-                unsigned int v  = 0;
-                unsigned int vn = 0;
-                unsigned int vt = 0;
+                unsigned int v;
+                Vertex vertex;
+                vertex.color = vec3(1, 1, 1);
+                
+                //First vertex
+                if (stream >> v)
+                {
+                    vertex.position = positions[v - 1];
+                    vertices.push_back(vertex);
+                } else {
+                    std::cout << "Failed to read the first vertex" << std::endl;
+                }
 
-                Vertex v0;
-                v0.color = vec3(1, 1, 1); // white by default
-                stream >> v;
-                if (!stream.fail()) v0.position = positions[v - 1];
-                if (stream.peek() == '/')
-                {
-                    stream.ignore(1, '/');
-                    stream >> vt;
-                    //TODO : use vt
-                }
-                if (stream.peek() == '/')
-                {
-                    stream.ignore(1, '/');
-                    stream >> vn;
-                    //TODO : use vn
-                }
-                vertices.push_back(v0);
+                while (!std::isspace(stream.peek())) stream.ignore();
 
-                Vertex v1;
-                v1.color = vec3(1, 1, 1); // white by default
-                stream >> v;
-                if (!stream.fail()) v1.position = positions[v - 1];
-                if (stream.peek() == '/')
+                //Second vertex
+                if (stream >> v)
                 {
-                    stream.ignore(1, '/');
-                    stream >> vt;
-                    //TODO : use vt
+                    vertex.position = positions[v - 1];
+                    vertices.push_back(vertex);
+                } else {
+                    std::cout << "Failed to read the second vertex" << std::endl;
                 }
-                if (stream.peek() == '/')
-                {
-                    stream.ignore(1, '/');
-                    stream >> vn;
-                    //TODO : use vn
-                }
-                vertices.push_back(v1);
 
-                Vertex v2;
-                v2.color = vec3(1, 1, 1); // white by default
-                stream >> v;
-                if (!stream.fail()) v2.position = positions[v - 1];
-                if (stream.peek() == '/')
+                while (!std::isspace(stream.peek())) stream.ignore();
+
+                //Third vertex
+                if (stream >> v)
                 {
-                    stream.ignore(1, '/');
-                    stream >> vt;
-                    //TODO : use vt
+                    vertex.position = positions[v - 1];
+                    vertices.push_back(vertex);
+                } else {
+                    std::cout << "Failed to read the third vertex" << std::endl;
                 }
-                if (stream.peek() == '/')
-                {
-                    stream.ignore(1, '/');
-                    stream >> vn;
-                    //TODO : use vn
-                }
-                vertices.push_back(v2);
                 continue;
             }
         }
@@ -450,6 +339,3 @@ void Mesh::load_obj_file(const std::string& path)
     normalize_vertices(vertices);
     this->vertices = vertices;
 }
-
-
-Mesh::~Mesh() {}

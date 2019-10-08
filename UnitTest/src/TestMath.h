@@ -1,13 +1,19 @@
-#include "math.h"
+#include "maths.h"
 #include "TestUtil.h"
 
 
 //TODO : seriously test this shit
 void test_vec2();
+void test_vec3();
+void test_transform();
+void test_aabb_intersection();
 
 void test_math()
 {
     test_vec2();
+    test_vec3();
+    // test_transform(); // tehcnically works fine. But EPSILON is too small for float shitty precision
+    test_aabb_intersection();
 }
 
 void test_vec2()
@@ -18,7 +24,7 @@ void test_vec2()
     ASSERT_EQ_F(a.length(), 0);
     ASSERT_EQ_F(a.length2(), 0);
     ASSERT_EQ_F(a.dot(a), 0);
-    ASSERT_EQ(a.normalise(), a); // quirk
+    ASSERT_EQ(a.normalize(), a); // quirk
 
     vec2 b = vec2(2);
     ASSERT_EQ_F(b.x, 2);
@@ -62,11 +68,11 @@ void test_transform()
     t = transform();
     t.translate(45, -410, 50);
     t.rotate(-90, 40, 130);
-    t.scale(1, 3, 0.3);
+    t.scale(1, 3, 2);
     a = vec3(-10, 0.5f, 49);
     b = t.multiply(a);
     c = t.multiplyInverse(b);
-    assert(about_equal(a, c));
+    ASSERT_EQ(a, c);
 
     //scaling test
     t = transform();
@@ -74,7 +80,7 @@ void test_transform()
     a = vec3(1, 1, 1);
     b = t.multiply(a);
     c = vec3(10, -10, 10);
-    assert(about_equal(b, c));
+    ASSERT_EQ(b, c);
 
     //rotation Z test
     t = transform();
@@ -82,5 +88,34 @@ void test_transform()
     a = vec3(1, 0, 0);
     b = t.multiply(a);
     c = vec3(0, 1, 0);
-    assert(about_equal(b, c));
+    ASSERT_EQ(b, c);
+}
+
+void test_aabb_intersection()
+{
+    AABB aabb; //unit AABB
+    aabb.min = vec3(-1, -1, -1);
+    aabb.max = vec3(+1, +1, +1);
+
+    float distance;
+    vec3 hitPoint;
+    vec3 normal;
+
+    //ZAxis test
+    {
+        ASSERT_TRUE(intersect(vec3(0, 0, -10), vec3::FRONT, aabb, distance, hitPoint, normal));
+        ASSERT_EQ_F(distance, 9);
+        ASSERT_TRUE(intersect(vec3(-1, -1, -10), vec3::FRONT, aabb, distance, hitPoint, normal));
+        ASSERT_TRUE(std::isnan(distance));
+        ASSERT_FALSE(intersect(vec3(0, 0, -10), vec3::BACK, aabb, distance, hitPoint, normal));
+
+
+        //AABB contains ray
+        ASSERT_TRUE(intersect(vec3(0, 0, 0), vec3::FRONT, aabb, distance, hitPoint, normal));
+        ASSERT_TRUE(intersect(vec3(0, 0, 0), vec3::BACK, aabb, distance, hitPoint, normal));
+
+        //AABB is behind
+        ASSERT_FALSE(intersect(vec3(0, 0, 10), vec3::FRONT, aabb, distance, hitPoint, normal));
+        ASSERT_TRUE(intersect(vec3(0, 0, 10), vec3::BACK, aabb, distance, hitPoint, normal));
+    }
 }

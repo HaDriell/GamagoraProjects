@@ -168,8 +168,8 @@ mat4 mat4::Rotation(float degrees, const vec3& axis)
 mat4 mat4::RotationYXZ(const vec3& degrees)
 {
     mat4 rot_x = mat4::RotationX(degrees.x);
-    mat4 rot_y = mat4::RotationX(degrees.y);
-    mat4 rot_z = mat4::RotationX(degrees.z);
+    mat4 rot_y = mat4::RotationY(degrees.y);
+    mat4 rot_z = mat4::RotationZ(degrees.z);
     return rot_x * rot_y * rot_z;
 }
 

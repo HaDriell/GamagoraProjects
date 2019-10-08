@@ -1,12 +1,12 @@
-#include "Sphere.h"
+#include "SphereInstance.h"
 
 #include <math.h>
 #include <random>
 
 
-Sphere::~Sphere() {}
+SphereInstance::~SphereInstance() {}
 
-HitResult Sphere::intersect(const vec3& position, const vec3& direction)
+HitResult SphereInstance::intersect(const vec3& position, const vec3& direction)
 {
     HitResult result;
 
@@ -37,23 +37,20 @@ HitResult Sphere::intersect(const vec3& position, const vec3& direction)
     return result;
 }
 
-vec3 Sphere::get_random_point_on_surface(std::default_random_engine& random, float bias)
+//https://math.stackexchange.com/questions/1163260/random-directions-on-hemisphere-oriented-by-an-arbitrary-vector?rq=1
+vec3 SphereInstance::get_random_point_on_surface(std::default_random_engine& random, float bias)
 {
-    //TODO : a changer
-    //http://mathworld.wolfram.com/SpherePointPicking.html
-    std::uniform_real_distribution<> dist_u(-1, 1);
-    std::uniform_real_distribution<> dist_theta(0, 2 * PI);
+    std::uniform_real_distribution<> dx(-1, 1);
+    std::uniform_real_distribution<> dy(-1, 1);
+    std::uniform_real_distribution<> dz(-1, 1);
 
-    float z = dist_u(random);
-    float theta = dist_theta(random);
-    float radius = std::sqrt(1 - z*z) + bias;
-
-
-    float x = radius * std::cos(theta);
-    float y = radius * std::sin(theta);
-
-    //Local space Random point (shifted by bias)
-    vec3 lrp = vec3(x, y, radius);
-    //Transform to world space
-    return transform.multiply(lrp);
+    vec3 point;
+    do
+    {
+        point.x = dx(random);
+        point.y = dy(random);
+        point.z = dz(random);
+    } while (point.length2() > 1);
+    point = point.normalize() + bias; // normalize & extrude from sphere using the bias value
+    return transform.multiply(point);
 }
