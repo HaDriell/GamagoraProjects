@@ -11,6 +11,9 @@ void normalize_vertices(std::vector<vec3>& vertices);
 static inline float __compute_centroid_on_x(const Triangle* t) { return (t->vertex0.x + t->vertex1.x + t->vertex2.x) / 3.f; }
 static inline float __compute_centroid_on_y(const Triangle* t) { return (t->vertex0.y + t->vertex1.y + t->vertex2.y) / 3.f; }
 static inline float __compute_centroid_on_z(const Triangle* t) { return (t->vertex0.z + t->vertex1.z + t->vertex2.z) / 3.f; }
+static inline float __compute_min_on_x(const Triangle* t) { return std::min(t->vertex0.x, std::min(t->vertex1.x, t->vertex2.x)); }
+static inline float __compute_min_on_y(const Triangle* t) { return std::min(t->vertex0.y, std::min(t->vertex1.y, t->vertex2.y)); }
+static inline float __compute_min_on_z(const Triangle* t) { return std::min(t->vertex0.z, std::min(t->vertex1.z, t->vertex2.z)); }
 
 static inline vec3 __min_XYZ(const vec3& a, const vec3& b)
 {
@@ -77,7 +80,7 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
         box.max = __max_XYZ(box.max, t->vertex2);
     }
 
-    if (triangles.size() <= 12 || level > 16)
+    if (triangles.size() <= 2 || level > 16)
     {
         //Leaf node. Simply store the triangles as is
         this->triangles = triangles;
@@ -100,7 +103,7 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
             //Subdivide along X
             if (dx > dy && dx > dz)
             {
-                if (__compute_centroid_on_x(t) - box.min.x < dx / 2)
+                if (__compute_min_on_x(t) < box.min.x + dx / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
@@ -108,7 +111,7 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
             //Subdivide along Y
             else if (dy > dx && dy > dz)
             {
-                if (__compute_centroid_on_y(t) - box.min.y < dy / 2)
+                if (__compute_min_on_y(t) < box.min.y + dy / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
@@ -116,7 +119,7 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
             //Subdivide along Z
             if (dz > dx && dz > dy)
             {
-                if (__compute_centroid_on_z(t) - box.min.z < dz / 2)
+                if (__compute_min_on_z(t) < box.min.z + dz / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
@@ -138,6 +141,15 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
 
 bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
 {
+    // if (intersectAABB(position, direction, box, distance, hitPoint, normal))
+    // {
+    //     if (triangles.empty())
+    //     {
+    //         if (left->intersect(position, direction, distance, hitPoint, normal)) return true;
+    //         if (right->intersect(position, direction, distance, hitPoint, normal)) return true;
+    //     } else return true;
+    // }
+
     float d;
     vec3 hp;
     vec3 n;
@@ -150,6 +162,7 @@ bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& dist
                 return true;
             if (right && right->intersect(position, direction, distance, hitPoint, normal))
                 return true;
+            return false;
         } else {
             d = std::numeric_limits<float>::max();
 
@@ -180,7 +193,8 @@ bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& dist
 
 bool Mesh::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
 {
-#if 0
+//Legacy
+#if 1
     {
         //Debugging old way of doing things
         distance = std::numeric_limits<float>::max();
@@ -199,11 +213,12 @@ bool Mesh::intersect(const vec3& position, const vec3& direction, float& distanc
 
         return distance < std::numeric_limits<float>::max();
     }
-#endif
+#else
 
     if (bvh)
         return bvh->intersect(position, direction, distance, hitPoint, normal);
     return false;
+#endif
 }
 
 Mesh::~Mesh()

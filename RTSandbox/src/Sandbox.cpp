@@ -15,7 +15,7 @@ int main()
     Scene scene;
     scene.bias = 1e-1;
     scene.pixel_sampling = 1;
-    scene.light_sampling = 100;
+    scene.light_sampling = 10;
     scene.indirect_illumination_sampling = 5;
     scene.ray_max_bounce = 6;
     scene.camera.fov = 60;

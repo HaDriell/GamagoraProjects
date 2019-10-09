@@ -26,35 +26,71 @@ bool intersectPlane(const vec3& position, const vec3& direction, const vec3& pla
 //https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb, float& distance, vec3& hitPoint, vec3& normal)
 {
-    float t1 = (aabb.min.x - position.x) / direction.x;
-    float t2 = (aabb.max.x - position.x) / direction.x;
-    float t3 = (aabb.min.y - position.y) / direction.y;
-    float t4 = (aabb.max.y - position.y) / direction.y;
-    float t5 = (aabb.min.z - position.z) / direction.z;
-    float t6 = (aabb.max.z - position.z) / direction.z;
+    vec3 invD = 1.f / direction;
 
+    float txmin = (aabb.min.x - position.x) * invD.x;
+    float txmax = (aabb.max.x - position.x) * invD.x;
+    float tymin = (aabb.min.y - position.y) * invD.y;
+    float tymax = (aabb.max.y - position.y) * invD.y;
+    float tzmin = (aabb.min.z - position.z) * invD.z;
+    float tzmax = (aabb.max.z - position.z) * invD.z;
 
+    float tmin = std::max(std::max(std::min(txmin, txmax), std::min(tymin, tymax)), std::min(tzmin, tzmax));
+    float tmax = std::min(std::min(std::max(txmin, txmax), std::max(tymin, tymax)), std::max(tzmin, tzmax));
 
-
-    float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-    float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
-
-    //Behind test
+    //AABB is behind
     if (tmax < 0)
         return false;
 
     //No intersection
     if (tmin > tmax)
         return false;
-    
+        
+    if (tmin == txmin)
+    {
+        normal = vec3::LEFT;
+        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
+    }
+    if (tmin == txmax)
+    {
+        normal = vec3::RIGHT;
+        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
+    } 
+    if (tmin == tymin)
+    {
+        normal = vec3::DOWN;
+        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
+    } 
+    if (tmin == tymax)
+    {
+        normal = vec3::UP;
+        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
+    } 
+    if (tmin == tzmin)
+    {
+        normal = vec3::BACK;
+        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
+    } 
+    if (tmin == tzmax)
+    {
+        normal = vec3::FRONT;
+        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
+    }
+
+    //intersecting, determine the distance, hitpoint and normal
+
+    //TODO : this is wrong. Like clearly
     distance = tmin;
+    
     hitPoint = position + direction * distance;
-    if (tmin == t1) normal = vec3::LEFT;
-    if (tmin == t2) normal = vec3::RIGHT;
-    if (tmin == t3) normal = vec3::DOWN;
-    if (tmin == t4) normal = vec3::UP;
-    if (tmin == t5) normal = vec3::BACK;
-    if (tmin == t6) normal = vec3::FRONT;
+
+    if (distance == txmin) normal = vec3::LEFT;
+    else if (distance == txmax) normal = vec3::RIGHT;
+    else if (distance == tymin) normal = vec3::DOWN;
+    else if (distance == tymax) normal = vec3::UP;
+    else if (distance == tzmin) normal = vec3::BACK;
+    else if (distance == tzmax) normal = vec3::FRONT;
+
     return true;
 }
 
