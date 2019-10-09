@@ -11,7 +11,7 @@
 
 vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level, std::default_random_engine& entropy);
 vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, const HitResult& hit);
-vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit, int level, std::default_random_engine entropy);
+vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit, int level, std::default_random_engine& entropy);
 vec3 get_direct_surface_illumination(const Scene& scene, const HitResult& hit, std::default_random_engine& entropy);
 
 
@@ -46,32 +46,32 @@ vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, c
     return vec3();
 }
 
-vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit, int level, std::default_random_engine entropy)
+vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit, int level, std::default_random_engine& entropy)
 {
     //Indirect illumination
-    std::uniform_real_distribution<> dr1(0, 1);
-    std::uniform_real_distribution<> dr2(0, 1);
+    std::uniform_real_distribution<> dist(0, 1);
 
     vec3 total = vec3();
-    float samplingFactor = 1 / (float) scene.indirect_illumination_sampling;
     for (unsigned int sample = 0; sample < scene.indirect_illumination_sampling; sample++)
     {
-        float r1 = dr1(entropy);
-        float r2 = dr2(entropy);
+        float r1 = dist(entropy);
+        float r2 = dist(entropy);
 
         //random vector in hemisphere pointing up (Y)
-        float x = std::cos(2 * PI * r1) * std::sqrt(1 - r2*r2);
-        float y = r2;
-        float z = std::sin(2 * PI * r1) * std::sqrt(1 - r2*r2);
+        float x = std::cos(2 * PI * r1) * std::sqrt(1 - r2);
+        float y = std::sin(2 * PI * r1) * std::sqrt(1 - r2);
+        float z = std::sqrt(r2);
 
         //Oriented base
-        vec3 f = hit.normal;        // forward is "up"
-        vec3 s = f.cross(vec3::UP); // side is "left" 
-        vec3 u = s.cross(f);        // up is "side"
-        vec3 indirection = (f * y) + (s * x) + (u * z);
+        vec3 f = hit.normal;
+        vec3 v = vec3(0.5f, 0.3f,-0.2f).normalize();
+        vec3 s = f.cross(v).normalize();
+        vec3 u = s.cross(f).normalize();
+
+        vec3 indirection = ((s * x) + (u * y) + (f * z)).normalize();
         
         //Trace using recursion
-        total += trace(scene, hit.hitPoint + hit.normal * scene.bias, indirection, level + 1, entropy) * samplingFactor;
+        total += trace(scene, hit.hitPoint + hit.normal * scene.bias, indirection, level + 1, entropy) / (2.f * scene.indirect_illumination_sampling);
     }
     return total;
 }
@@ -123,7 +123,7 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
     {
         //Illuminations
         vec3 illumination = get_direct_surface_illumination(scene, hit, entropy);
-        // illumination += get_indirect_surface_illumination(scene, hit, level, entropy);
+        illumination += get_indirect_surface_illumination(scene, hit, level, entropy);
         //Apply the material properties
         color += illumination * material.opaqueness * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
     }
@@ -171,19 +171,20 @@ void Scene::render()
 
     Timer timer;
     timer.reset();
+    std::default_random_engine entropy;
+
     #pragma omp parallel for
     for (unsigned int y = 0; y < camera.framebuffer.height; y++)
     {
         for (unsigned int x = 0; x < camera.framebuffer.width; x++)
         {
-            std::default_random_engine entropy;
-            std::uniform_real_distribution<> dist_x(0, 1);
-            std::uniform_real_distribution<> dist_y(0, 1);
+            std::uniform_real_distribution<> dist(0, 1);
+
             vec3 color = vec3(0, 0, 0);
-            for (unsigned int sample = 0; sample < pixel_sampling; sample++)
+            for (int sample = 0; sample < pixel_sampling; sample++)
             {
-                float dx = (x + dist_x(entropy) - camera.framebuffer.width / 2) * imageAspectRatio;
-                float dy = (y + dist_y(entropy) - camera.framebuffer.height / 2);
+                float dx = (x + dist(entropy) - camera.framebuffer.width / 2) * imageAspectRatio;
+                float dy = (y + dist(entropy) - camera.framebuffer.height / 2);
 
                 vec3 direction = (u * dx) + (v * dy) + (w * focalDistance);
                 direction = direction.normalize();
