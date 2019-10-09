@@ -13,11 +13,11 @@ MeshInstance* createBlock(Scene& scene, float x, float y, float z, float gridSiz
 int main()
 {
     Scene scene;
-    scene.bias = 1;
+    scene.bias = 1e-1;
     scene.pixel_sampling = 1;
-    scene.light_sampling = 10;
+    scene.light_sampling = 100;
     scene.indirect_illumination_sampling = 5;
-    scene.ray_max_bounce = 2;
+    scene.ray_max_bounce = 6;
     scene.camera.fov = 60;
 
     //Camera positionning
@@ -42,7 +42,9 @@ int main()
         }
     }
 
+    //TODO : Check loading OBJ
     MeshInstance* coeur = scene.createOBJMesh("Love.obj");
+    // coeur->mesh.load_off_file("bunny.off");
     coeur->transform.set_translation(0, 0, 0);
     coeur->transform.set_scaling(15, 15, 15);
     coeur->material |= Material::Diffuse(1, 1, 1, 1);

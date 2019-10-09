@@ -122,10 +122,10 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
     if (material.diffuse)
     {
         //Illuminations
-        vec3 d_illumination = get_direct_surface_illumination(scene, hit, entropy);
-        vec3 i_illumination = get_indirect_surface_illumination(scene, hit, level, entropy);
+        vec3 illumination = get_direct_surface_illumination(scene, hit, entropy);
+        // illumination += get_indirect_surface_illumination(scene, hit, level, entropy);
         //Apply the material properties
-        color += (d_illumination + i_illumination) * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
+        color += illumination * material.opaqueness * material.albedo; // should be attenuated by 2*PI but who cares it's just about lighting intensities
     }
 
     //The Hit surface emits light
