@@ -18,6 +18,7 @@ void test_gl()
 {
     Window w = Window();
     Shader s;
+    Texture t;
 
     w.events().add<KeyPressedEvent>([&](const KeyPressedEvent& event)
     {
@@ -29,6 +30,11 @@ void test_gl()
         if (event.keycode == KEY_C)
         {
             s.compileFile("res/example.glsl");
+        }
+
+        if (event.keycode == KEY_T)
+        {
+            t.loadFile("res/metal.png");
         }
     });
 

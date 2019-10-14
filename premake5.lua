@@ -163,7 +163,8 @@ workspace "TP"
             "Math",
             "GL",
             "Glad",
-            "glfw3"
+            "glfw3",
+            "freeimage"
         }
     
     -- RTSandbox, well... a sandbox
