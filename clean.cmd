@@ -1,3 +1,3 @@
 @echo off
 call config.cmd
-make %TARGET% config=%CONFIG% clean
+make clean config=%CONFIG% 

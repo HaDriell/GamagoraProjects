@@ -112,6 +112,31 @@ workspace "TP"
         }
         buildoptions { "-fopenmp" }
         linkoptions { "-fopenmp" }
+            -- RT, a little raytracing lib
+    project "GL"
+        location "%{prj.name}"
+        language "C++"
+        architecture "x64"
+        kind "StaticLib"
+        cppdialect "gnu++17"
+        files {
+            "%{prj.name}/src/**"
+        }
+        includedirs {
+            "D:/msys64/mingw64/include",
+            "Math/src",
+            "Util/src",
+            "Glad/include"
+        }
+        libdirs {
+            "D:/msys64/mingw64/lib"
+        }
+        links {
+            "freeimage",
+            "Math",
+            "Util",
+            "Glad"
+        }
 
     --Global unit testing project for all the workspace
     project "UnitTest"
@@ -126,14 +151,19 @@ workspace "TP"
         includedirs {
             "D:/msys64/mingw64/include",
             "AI/src",
-            "Math/src"
+            "Math/src",
+            "GL/src",
+            "Glad/include"
         }
         libdirs {
             "D:/msys64/mingw64/lib"
         }
         links {
             "AI",
-            "Math"
+            "Math",
+            "GL",
+            "Glad",
+            "glfw3"
         }
     
     -- RTSandbox, well... a sandbox
