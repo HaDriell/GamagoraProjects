@@ -4,21 +4,21 @@
 
 class MouseMovedEvent : public Event
 {
-private:
-    unsigned int x;
-    unsigned int y;
+public:
+    const float x;
+    const float y;
 
 public:
-    MouseMovedEvent(unsigned int x, unsigned int y) : x(x), y(y) {}
+    MouseMovedEvent(float x, float y) : x(x), y(y) {}
 
     EVENT_CLASS_TYPE(MouseMoved)
 };
 
 class MouseScrolledEvent : public Event
 {
-private:
-    float xOffset;
-    float yOffset;
+public:
+    const float xOffset;
+    const float yOffset;
 
 public:
     MouseScrolledEvent(float xOffset, float yOffset) : xOffset(xOffset), yOffset(yOffset) {}
@@ -28,12 +28,11 @@ public:
 
 class MouseButtonEvent : public Event
 {
-protected:
-    int button;
-    MouseButtonEvent(int button) : button(button) {}
-
 public:
-    inline int getButton() const { return button; }
+    const int button;
+
+protected:
+    MouseButtonEvent(int button) : button(button) {}
 };
 
 class MouseButtonPressedEvent : public MouseButtonEvent

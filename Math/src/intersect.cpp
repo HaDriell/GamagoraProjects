@@ -24,7 +24,7 @@ bool intersectPlane(const vec3& position, const vec3& direction, const vec3& pla
 
 
 //https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
-bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb, float& distance, vec3& hitPoint, vec3& normal)
+bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb)
 {
     vec3 invD = 1.f / direction;
 
@@ -45,52 +45,6 @@ bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb
     //No intersection
     if (tmin > tmax)
         return false;
-        
-    if (tmin == txmin)
-    {
-        normal = vec3::LEFT;
-        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
-    }
-    if (tmin == txmax)
-    {
-        normal = vec3::RIGHT;
-        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
-    } 
-    if (tmin == tymin)
-    {
-        normal = vec3::DOWN;
-        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
-    } 
-    if (tmin == tymax)
-    {
-        normal = vec3::UP;
-        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
-    } 
-    if (tmin == tzmin)
-    {
-        normal = vec3::BACK;
-        return intersectPlane(position, direction, normal, aabb.min, distance, hitPoint);
-    } 
-    if (tmin == tzmax)
-    {
-        normal = vec3::FRONT;
-        return intersectPlane(position, direction, normal, aabb.max, distance, hitPoint);
-    }
-
-    //intersecting, determine the distance, hitpoint and normal
-
-    //TODO : this is wrong. Like clearly
-    distance = tmin;
-    
-    hitPoint = position + direction * distance;
-
-    if (distance == txmin) normal = vec3::LEFT;
-    else if (distance == txmax) normal = vec3::RIGHT;
-    else if (distance == tymin) normal = vec3::DOWN;
-    else if (distance == tymax) normal = vec3::UP;
-    else if (distance == tzmin) normal = vec3::BACK;
-    else if (distance == tzmax) normal = vec3::FRONT;
-
     return true;
 }
 

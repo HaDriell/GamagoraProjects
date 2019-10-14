@@ -97,25 +97,19 @@ void test_aabb_intersection()
     aabb.min = vec3(-1, -1, -1);
     aabb.max = vec3(+1, +1, +1);
 
-    float distance;
-    vec3 hitPoint;
-    vec3 normal;
-
     //ZAxis test
     {
-        ASSERT_TRUE(intersectAABB(vec3(0, 0, -10), vec3::FRONT, aabb, distance, hitPoint, normal));
-        ASSERT_EQ_F(distance, 9);
-        ASSERT_TRUE(intersectAABB(vec3(-1, -1, -10), vec3::FRONT, aabb, distance, hitPoint, normal));
-        ASSERT_TRUE(std::isnan(distance));
-        ASSERT_FALSE(intersectAABB(vec3(0, 0, -10), vec3::BACK, aabb, distance, hitPoint, normal));
+        ASSERT_TRUE(intersectAABB(vec3(0, 0, -10), vec3::FRONT, aabb));
+        ASSERT_TRUE(intersectAABB(vec3(-1, -1, -10), vec3::FRONT, aabb));
+        ASSERT_FALSE(intersectAABB(vec3(0, 0, -10), vec3::BACK, aabb));
 
 
         //AABB contains ray
-        ASSERT_TRUE(intersectAABB(vec3(0, 0, 0), vec3::FRONT, aabb, distance, hitPoint, normal));
-        ASSERT_TRUE(intersectAABB(vec3(0, 0, 0), vec3::BACK, aabb, distance, hitPoint, normal));
+        ASSERT_TRUE(intersectAABB(vec3(0, 0, 0), vec3::FRONT, aabb));
+        ASSERT_TRUE(intersectAABB(vec3(0, 0, 0), vec3::BACK, aabb));
 
         //AABB is behind
-        ASSERT_FALSE(intersectAABB(vec3(0, 0, 10), vec3::FRONT, aabb, distance, hitPoint, normal));
-        ASSERT_TRUE(intersectAABB(vec3(0, 0, 10), vec3::BACK, aabb, distance, hitPoint, normal));
+        ASSERT_FALSE(intersectAABB(vec3(0, 0, 10), vec3::FRONT, aabb));
+        ASSERT_TRUE(intersectAABB(vec3(0, 0, 10), vec3::BACK, aabb));
     }
 }

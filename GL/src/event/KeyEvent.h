@@ -4,12 +4,11 @@
 
 class KeyEvent : public Event
 {
-protected:
-    int keycode;
-    KeyEvent(int keycode) : keycode(keycode) {}
-
 public:
-    inline int getKeycode() const { return keycode; };
+    const int keycode;
+
+protected:
+    KeyEvent(int keycode) : keycode(keycode) {}
 };
 
 class KeyPressedEvent : public KeyEvent
@@ -25,7 +24,7 @@ class KeyReleasedEvent : public KeyEvent
 public:
     KeyReleasedEvent(int keycode) : KeyEvent(keycode) {}
 
-    EVENT_CLASS_TYPE(KeyPressed)
+    EVENT_CLASS_TYPE(KeyReleased)
 };
 
 class KeyTypedEvent : public KeyEvent
@@ -33,6 +32,6 @@ class KeyTypedEvent : public KeyEvent
 public:
     KeyTypedEvent(int keycode) : KeyEvent(keycode) {}
 
-    EVENT_CLASS_TYPE(KeyPressed)
+    EVENT_CLASS_TYPE(KeyTyped)
 };
 

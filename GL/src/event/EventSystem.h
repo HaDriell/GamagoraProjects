@@ -1,79 +1,105 @@
 #pragma once
 
+#include <iostream>
 #include <functional>
 
 #include "KeyEvent.h"
 #include "MouseEvent.h"
 #include "WindowEvent.h"
 
-template<typename T>
-using EventHandler = std::function<void(T&)>; 
 
-template<typename T>
-using EventHandlerList = std::vector<EventHandler<T>>;
+//EventHandler is a basic function pointer to a const Event reference
+template<typename E>
+using EventHandler = std::function<void(const E&)>;
+
+//Basic interface for an Event Manager
+class EventManagerInterface
+{
+public:
+    virtual ~EventManagerInterface() = default;
+};
+
+
+//EventManager implementation. Can add/remove handlers and dispatch specific events to them 
+template<typename E>
+class EventManager : public EventManagerInterface
+{
+private:
+    std::vector<EventHandler<E>> handlers;
+
+public:
+    void add(const EventHandler<E> handler)
+    {
+        handlers.push_back(handler);
+    }
+
+    void remove(const EventHandler<E> handler)
+    {
+        auto it = std::find(handlers.begin(), handlers.end(), handler);
+        if (it != handlers.end())
+        {
+            handlers.erase(it);
+        }
+    }
+
+    void dispatch(const E& event)
+    {
+        if (event.handled)
+            return;
+
+        for (EventHandler<E> handler : handlers)
+        {   
+            handler(event);
+            if (event.handled) 
+                return;
+        }
+    }
+};
 
 class EventSystem
 {
 private:
-    std::map<EventType, void*> listeners;
+    std::map<EventType, EventManagerInterface*> managers;
 
-    //Finds or builds
     template<typename E>
-    EventHandlerList<E>* ForEvent()
+    EventManager<E>* ForEvent()
     {
-        EventHandlerList<E>* list = nullptr;
-        auto entry = listeners.find( E::getStaticType() );
-        if (entry == listeners.end())
-        {
-            list = new EventHandlerList<E>();
-            listeners[ E::getStaticType() ] = (void*) list;
-        }
-        else
-        {
-            list = (EventHandlerList<E>*) entry->second;
-        }
-        return list;
+        //Retrieve existing manager
+        auto it = managers.find( E::getStaticType() );
+        if (it != managers.end())
+            return (EventManager<E>*) it->second;
+        
+        //Find unsuccessful, instanciate a new manager
+        EventManager<E>* manager = new EventManager<E>();
+        managers[ E::getStaticType() ] = manager;
+        return manager;
     }
 
 public:
     ~EventSystem()
     {
-        //Window Events cleanup
-        delete ForEvent<WindowClosedEvent>();
-        delete ForEvent<WindowResizedEvent>();
-        delete ForEvent<WindowGainedFocusEvent>();
-        delete ForEvent<WindowLostFocusEvent>();
-        delete ForEvent<WindowMovedEvent>();
-
-        //Key Events cleanup
-        delete ForEvent<KeyPressedEvent>();
-        delete ForEvent<KeyReleasedEvent>();
-        delete ForEvent<KeyTypedEvent>();
-        
-        //Mouse Events cleanup
-        delete ForEvent<MouseButtonPressedEvent>();
-        delete ForEvent<MouseButtonReleasedEvent>();
-        delete ForEvent<MouseMovedEvent>();
-        delete ForEvent<MouseScrolledEvent>();
+        //delete each manager
+        for (auto entry : managers)
+        {
+            delete entry.second;
+        }
     }
 
     template<typename E>
     void add(EventHandler<E> handler)
     {
-        ForEvent<E>()->push_back(handler);
+        ForEvent<E>()->add(handler);
     }
 
     template<typename E>
-    void dispatch(E& event)
+    void remove(EventHandler<E> handler)
     {
-        if (!event.handled)
-        {
-            for (EventHandler<E>& handler : *ForEvent<E>())
-            {
-                handler(event);
-                if (event.handled) 
-                    return;
-            }
-        }
+        ForEvent<E>()->remove(handler);
+    }
+
+    template<typename E>
+    void dispatch(const E& event)
+    {
+        ForEvent<E>()->dispatch(event);
     }
 };

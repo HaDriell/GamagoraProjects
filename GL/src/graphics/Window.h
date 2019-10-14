@@ -27,19 +27,21 @@ private:
     unsigned int width;
     unsigned int height;
     GLFWwindow* handle;
-    EventSystem events;
+    EventSystem eventSystem;
     
 public:
     Window(const WindowSettings& settings = WindowSettings());
     ~Window();
+
+
     void update();
 
     bool shouldClose() const;
-
     std::string getTitle() const;
     unsigned int getWidth() const;
     unsigned int getHeight() const;
 
+    EventSystem& events();
     void show();
     void hide();
     void close();
