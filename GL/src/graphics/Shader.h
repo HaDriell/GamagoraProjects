@@ -19,8 +19,9 @@ public:
     void compileSources(const ShaderSources& sources);
     void destroy();
     
-    void bind();
-    void unbind();
+    void bind() const;
+    void unbind() const;
+    
 
     void setUniform(const std::string& name, int value);
     void setUniform(const std::string& name, float value);
