@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+#include "Timer.h"
 #include "Events.h"
 #include "Graphics.h"
 
@@ -15,9 +16,9 @@ int main()
 
         //Create Geometry
         std::vector<float> positions;
-        positions.push_back(-1); positions.push_back(-1); positions.push_back(0);
-        positions.push_back(+1); positions.push_back(-1); positions.push_back(0);
-        positions.push_back(+0); positions.push_back(+1); positions.push_back(0);
+        positions.push_back(-1); positions.push_back(-1); positions.push_back(-0.3f);
+        positions.push_back(+1); positions.push_back(-1); positions.push_back(-0.3f);
+        positions.push_back(+0); positions.push_back(+1); positions.push_back(-0.3f);
 
         std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(positions.data(), positions.size());
         vertexBuffer->setLayout({
@@ -26,9 +27,9 @@ int main()
 
         //Create Color
         std::vector<float> colors;
-        colors.push_back(1); colors.push_back(1); colors.push_back(1); colors.push_back(1);
-        colors.push_back(1); colors.push_back(1); colors.push_back(1); colors.push_back(1);
-        colors.push_back(1); colors.push_back(1); colors.push_back(1); colors.push_back(1);
+        colors.push_back(1); colors.push_back(0); colors.push_back(0); colors.push_back(1);
+        colors.push_back(0); colors.push_back(1); colors.push_back(0); colors.push_back(1);
+        colors.push_back(0); colors.push_back(0); colors.push_back(1); colors.push_back(1);
 
         std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<VertexBuffer>(colors.data(), colors.size());
         colorBuffer->setLayout({
@@ -49,20 +50,32 @@ int main()
         std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indices.data(), indices.size());
 
 
+        Timer age;
+        age.reset();
+
         // Render::Init();
         Render::ClearColor(vec4(0, 0, 0, 1)); // black
         while (!window->shouldClose())
         {
             //Poll & Swap Buffers
             window->update();
+            Render::Debug();
+            float dt = age.elapsed();
 
-            //Render
+            //Begin draw
             Render::Clear();
 
-            //Done every loop
+            //Setup Shader 
             shader.bind();
+            transform t;
+            t.set_translation(std::sin(dt) * 0.3f, 0, 0);
+            t.set_rotation(dt * 15, dt * 5, dt * 10);
+            shader.setUniform("model", t.get_matrix());
+
+            //Render object
             Render::DrawIndexed(vertexArray, indexBuffer);
-            Render::Debug();
+
+            //End draw
         }
     }
     // std::cout << "Program Terminated. Press Enter to terminate" << std::endl;
