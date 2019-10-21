@@ -32,23 +32,22 @@ bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb
 bool intersectSphere(const vec3& position, const vec3& direction, const Sphere& sphere, float& distance, vec3& hitPoint, vec3& normal)
 {
     vec3 oc = sphere.position - position;
-    float a = direction.dot(direction);
-    float b = 2 * oc.dot(direction);
-    float c = oc.dot(oc) - 1; // direction is assumed to be normalized. direction.dot(direction) = 1
-    
-    float discriminant = (b * b) - (4 * c);
+    float tca = vec3::dot(oc, direction);
+    float d2 = vec3::dot(oc, oc) - (tca * tca);
+    float r2 = sphere.radius * sphere.radius;
 
-    if (discriminant < 0)
+    if (d2 > r2) 
         return false;
+    
+    float thc = std::sqrt(r2 - d2);
 
-    //Find distance solutions (they might be negative !)
-    float sqrtDiscriminant = std::sqrt(discriminant);
-    float t = (-b - sqrtDiscriminant) / 2;
-    if (t < 0) 
-        t = (-b + sqrtDiscriminant) / 2;
+    float t =  tca - thc;
+    if (t < 0)
+        t = tca + thc;
+    
     if (t < 0)
         return false;
-
+    
     //At this point we're sure we hit something at the distance of t > 0. Update the output references
     distance = t;
     hitPoint = position + direction * t;
@@ -67,30 +66,30 @@ bool intersectTriangle(const vec3& position, const vec3& direction, const Triang
     float a, f, u, v;
 
     //Parallel test
-    h = direction.cross(edge2);
-    a = edge1.dot(h);
+    h = vec3::cross(direction, edge2);
+    a = vec3::dot(edge1, h);
     if (a > -EPSILON && a < EPSILON)
         return false;
 
     //Barycentric coord tests
     f = 1.0/a;
     s = position - triangle.vertex0;
-    u = f * (s.dot(h));
+    u = f * (vec3::dot(s, h));
     if (u < 0.0 || u > 1.0)
         return false;
-    q = s.cross(edge1);
-    v = f * direction.dot(q);
+    q = vec3::cross(s, edge1);
+    v = f * vec3::dot(direction, q);
     if (v < 0.0 || u + v > 1.0)
         return false;
     
     //Behind test
-    float t = f * edge2.dot(q);
+    float t = f * vec3::dot(edge2, q);
     if (t < 0)
         return false;
 
     //We're sure we hit the triangle. update the output references
     distance = t;
     hitPoint = position + direction * t;
-    normal   = edge1.cross(edge2).normalize();
+    normal   = vec3::cross(edge1, edge2).normalize();
     return true;
 }

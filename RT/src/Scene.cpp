@@ -57,13 +57,13 @@ HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, const HitResult& hit)
 {
     vec3 htl = (light.position - hit.hitPoint).normalize();
-    float lightDistance2 = light.position.distance2(hit.hitPoint);
+    float lightDistance2 = vec3::distance2(light.position, hit.hitPoint);
 
     HitResult light_hit = scene.raycast(hit.hitPoint + hit.normal * scene.bias, htl);
     if (!light_hit.hit || light_hit.distance >= lightDistance2)
     {
         float lightDistanceFactor = 1.f / lightDistance2;
-        float hitAngleFactor = hit.normal.dot(htl);
+        float hitAngleFactor = vec3::dot(hit.normal, htl);
         float intensity = lightDistanceFactor * hitAngleFactor * light.intensity;
         if (intensity < 0) intensity = 0;
         return light.color * intensity;
@@ -90,8 +90,8 @@ vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit,
         //Oriented base
         vec3 f = hit.normal;
         vec3 v = vec3(0.5f, 0.3f,-0.2f).normalize();
-        vec3 s = f.cross(v).normalize();
-        vec3 u = s.cross(f).normalize();
+        vec3 s = vec3::cross(f, v).normalize();
+        vec3 u = vec3::cross(s, f).normalize();
 
         vec3 indirection = ((s * x) + (u * y) + (f * z)).normalize();
         
@@ -163,7 +163,7 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
     if (material.reflective)
     {
         vec3 reflection_position = hit.hitPoint + hit.normal * scene.bias;
-        vec3 reflection_direction = direction.reflect(hit.normal).normalize();
+        vec3 reflection_direction = vec3::reflect(direction, hit.normal).normalize();
         color += material.reflectiveness * trace(scene, reflection_position, reflection_direction, level + 1, entropy);
     }
 

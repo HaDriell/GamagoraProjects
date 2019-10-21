@@ -16,7 +16,7 @@ HitResult Instance::hit(const vec3& position, const vec3& direction)
     //Transform HitResult back to World space
     result.hitPoint = transform.multiply(result.hitPoint, 1);
     result.normal = transform.multiply(result.normal, 0).normalize();
-    result.distance = position.distance(result.hitPoint); // for now I don't have anything better
+    result.distance = vec3::distance(position, result.hitPoint); // for now I don't have anything better
 
     return result;
 }

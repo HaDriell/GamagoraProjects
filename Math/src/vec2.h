@@ -16,10 +16,11 @@ struct vec2
     float length() const;
     float length2() const;
     vec2 normalize() const;
-    float distance(const vec2& v) const;
-    float distance2(const vec2& v) const;
-    float dot(const vec2& v) const;
-    float cross(const vec2& v) const;
+    
+    static float distance(const vec2& a, const vec2& b);
+    static float distance2(const vec2& a, const vec2& b);
+    static float dot(const vec2& a, const vec2& b);
+    static float cross(const vec2& a, const vec2& b);
 };
 
 vec2 operator-(const vec2& v);

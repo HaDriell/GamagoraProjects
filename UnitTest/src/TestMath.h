@@ -23,7 +23,7 @@ void test_vec2()
     ASSERT_EQ_F(a.y, 0);
     ASSERT_EQ_F(a.length(), 0);
     ASSERT_EQ_F(a.length2(), 0);
-    ASSERT_EQ_F(a.dot(a), 0);
+    ASSERT_EQ_F(vec2::dot(a, a), 0);
     ASSERT_EQ(a.normalize(), a); // quirk
 
     vec2 b = vec2(2);
@@ -38,10 +38,10 @@ void test_vec2()
 
     a = vec2(2, 0);
     b = vec2(0, 2);
-    ASSERT_EQ_F(a.dot(b), 0);
-    ASSERT_EQ_F(a.distance2(b), 8);
-    ASSERT_EQ_F(a.distance(b), std::sqrt(8));
-    ASSERT_EQ_F(a.cross(b), 4);
+    ASSERT_EQ_F(vec2::dot(a, b), 0);
+    ASSERT_EQ_F(vec2::distance2(a, b), 8);
+    ASSERT_EQ_F(vec2::distance(a, b), std::sqrt(8));
+    ASSERT_EQ_F(vec2::cross(a, b), 4);
 }
 
 void test_vec3()

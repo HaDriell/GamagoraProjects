@@ -34,33 +34,24 @@ bool SphereInstance::intersectBoundingBox(const vec3& position, const vec3& dire
 
 HitResult SphereInstance::intersect(const vec3& position, const vec3& direction)
 {
-    HitResult result;
+    HitResult hit;
 
-    //try to hit a unit sphere located at (0, 0, 0)
-    float b = 2 * direction.dot(position);
-    float c = position.dot(position) - 1;
-    
-    float det = (b * b) - (4 * c);
-    if (det >= 0.f)
+    Sphere unitSphere = Sphere();
+    unitSphere.position = vec3();
+    unitSphere.radius = 1.0f;
+
+    float distance;
+    vec3 hitPoint;
+    vec3 normal;
+    if (intersectSphere(position, direction, unitSphere, distance, hitPoint, normal))
     {
-        float sqrtDet = std::sqrt(det);
-
-        //First solution
-        float distance = (-b - sqrtDet) / 2;
-        //Fallback solution
-        if (distance < 0) distance = (-b + sqrtDet) / 2;
-
-        //Hit something
-        if (distance >= 0)
-        {
-            result.distance = distance;
-            result.hit = true;
-            result.hitPoint = position + direction * distance;
-            result.normal = result.hitPoint.normalize();
-            result.instance = this;
-        }
+        hit.hit = true;
+        hit.hitPoint = hitPoint;
+        hit.distance = distance;
+        hit.normal = normal;
+        hit.instance = this;
     }
-    return result;
+    return hit;
 }
 
 vec3 SphereInstance::get_random_point_on_surface(std::default_random_engine& random, float bias)

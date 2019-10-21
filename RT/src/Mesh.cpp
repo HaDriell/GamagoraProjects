@@ -229,7 +229,7 @@ vec3 Mesh::get_centroid() const
 
         //Compute triangle Centroid & Area
         vec3 tCentroid = (t->vertex0 + t->vertex1 + t->vertex2) / 3.f;
-        float tArea = 0.5 * edge1.cross(edge2).length();
+        float tArea = 0.5 * vec3::cross(edge1, edge2).length();
 
         //Sum
         centroid += tArea * tCentroid;
@@ -596,7 +596,7 @@ void normalize_vertices(std::vector<vec3>& vertices)
 
         //Compute triangle Centroid & Area
         vec3 tCentroid = (vertex0 + vertex1 + vertex2) / 3.f;
-        float tArea = 0.5 * edge1.cross(edge2).length();
+        float tArea = 0.5 * vec3::cross(edge1, edge2).length();
 
         //Sum
         centroid += tArea * tCentroid;

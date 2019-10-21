@@ -188,26 +188,26 @@ vec2 vec2::normalize() const
     return vec2();
 }
 
-float vec2::distance(const vec2& v) const
+float vec2::distance(const vec2& a, const vec2& b)
 {
-    return std::sqrt(distance2(v));
+    return std::sqrt(distance2(a, b));
 }
 
-float vec2::distance2(const vec2& v) const
+float vec2::distance2(const vec2& a, const vec2& b)
 {
-    float dx = x - v.x;
-    float dy = y - v.y;
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
     return dx * dx + dy * dy;
 }
 
-float vec2::dot(const vec2& v) const
+float vec2::dot(const vec2& a, const vec2& b)
 {
-    return x * v.x + y * v.y;
+    return a.x * b.x + a.y * b.y;
 }
 
-float vec2::cross(const vec2& v) const
+float vec2::cross(const vec2& a, const vec2& b)
 {
-    return x *v.y - y * v.x;
+    return a.x * b.y - b.x * a.y;
 }
 
 std::ostream& operator<<(std::ostream& stream, const vec2& v)

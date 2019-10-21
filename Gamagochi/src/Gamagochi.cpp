@@ -31,7 +31,7 @@ void Gamagochi::udpate(Game& game)
             target = fruits[0]->position;
             for (Entity* e : game.getFruits())
             {
-                if (position.distance2(target) > position.distance2(e->position))
+                if (vec2::distance2(position, target) > vec2::distance2(position, e->position))
                     target = e->position;
             }
             // Now it's time to move towards the food
@@ -41,7 +41,7 @@ void Gamagochi::udpate(Game& game)
 
         case ChasingFood:
         {
-            if (position.distance2(target) < 1)
+            if (vec2::distance2(position, target) < 1)
             {
                 goal = EatingFood;
                 break;
@@ -106,7 +106,7 @@ void Gamagochi::udpate(Game& game)
             //Eat all the fruits at position
             for (Entity* fruit : game.getFruits())
             {
-                if (fruit->position.distance2(position) < 1)
+                if (vec2::distance2(fruit->position, position) < 1)
                 {
                     fruit->destroy();
                 }
