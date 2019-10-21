@@ -11,7 +11,57 @@ workspace "TP"
         optimize "On"
     filter {}
 
-    -- Glad is an OpenGL Loader. Currently loading OpenGL 4.6 without any manufacturer specific extension
+-------------------------------------------------------------------------------
+-- Tools & Utility
+-------------------------------------------------------------------------------
+
+    -- Math library that aims to be directly compatible with OpenGL and provide 
+    -- basic vector math capabilities.
+    project "Math"
+        location "%{prj.name}"
+        language "C++"
+        architecture "x64"
+        kind "StaticLib"
+        cppdialect "gnu++17"
+        files {
+            "%{prj.name}/src/**"
+        }
+        includedirs {
+            "D:/msys64/mingw64/include"
+        }
+        libdirs {
+            "D:/msys64/mingw64/lib"
+        }
+        links {
+        }
+        
+    -- Utility project. Aims to store most of the boiler plate code that is likely
+    -- to be used in any project. 
+    project "Util"
+        location "%{prj.name}"
+        language "C++"
+        architecture "x64"
+        kind "StaticLib"
+        cppdialect "gnu++17"
+        files {
+            "%{prj.name}/src/**"
+        }
+        includedirs {
+            "D:/msys64/mingw64/include"
+        }
+        libdirs {
+            "D:/msys64/mingw64/lib"
+        }
+        links {
+        }
+
+-------------------------------------------------------------------------------
+-- Real Time Rendering related projects
+-------------------------------------------------------------------------------
+
+    -- Glad is an OpenGL loader. The sources are generated from a website.
+    -- OpenGL version loaded   : OpenGL 4.6
+    -- Manufacturer extensions : None
     project "Glad"
         location "%{prj.name}"
         language "C"
@@ -31,8 +81,9 @@ workspace "TP"
         links {
         }
 
-    -- Utility project that replaces GLM 
-    project "Math"
+    -- GL aims to be a small real time rendering library. 
+    -- It's inspired by Hazel 
+    project "GL"
         location "%{prj.name}"
         language "C++"
         architecture "x64"
@@ -42,34 +93,23 @@ workspace "TP"
             "%{prj.name}/src/**"
         }
         includedirs {
-            "D:/msys64/mingw64/include"
+            "D:/msys64/mingw64/include",
+            "Math/src",
+            "Util/src",
+            "Glad/include"
         }
         libdirs {
             "D:/msys64/mingw64/lib"
         }
         links {
+            "glfw3",
+            "freeimage",
+            "Math",
+            "Util",
+            "Glad"
         }
-    -- Utility project for any useful classes
-    project "Util"
-        location "%{prj.name}"
-        language "C++"
-        architecture "x64"
-        kind "StaticLib"
-        cppdialect "gnu++17"
-        files {
-            "%{prj.name}/src/**"
-        }
-        includedirs {
-            "D:/msys64/mingw64/include"
-        }
-        libdirs {
-            "D:/msys64/mingw64/lib"
-        }
-        links {
-        }
-
-    -- ChuteLibre is the first TP of this year. It's just a small simulation about falling objects, gravity and some basic physics
-    project "ChuteLibre"
+    
+    project "GLSandbox"
         location "%{prj.name}"
         language "C++"
         architecture "x64"
@@ -79,15 +119,28 @@ workspace "TP"
             "%{prj.name}/src/**"
         }
         includedirs {
-            "D:/msys64/mingw64/include"
+            "D:/msys64/mingw64/include",
+            "Math/src",
+            "Util/src",
+            "Glad/include",
+            "GL/src"
         }
         libdirs {
             "D:/msys64/mingw64/lib"
         }
         links {
+            "GL",
+            "glfw3",
+            "freeimage",
+            "Math",
+            "Util",
+            "Glad"
         }
 
-    -- RT, a little raytracing lib
+-------------------------------------------------------------------------------
+-- Ray Tracing
+-------------------------------------------------------------------------------
+    -- Static library implementing some basic ray tracing capabilities
     project "RT"
         location "%{prj.name}"
         language "C++"
@@ -112,62 +165,8 @@ workspace "TP"
         }
         buildoptions { "-fopenmp" }
         linkoptions { "-fopenmp" }
-            -- RT, a little raytracing lib
-    project "GL"
-        location "%{prj.name}"
-        language "C++"
-        architecture "x64"
-        kind "StaticLib"
-        cppdialect "gnu++17"
-        files {
-            "%{prj.name}/src/**"
-        }
-        includedirs {
-            "D:/msys64/mingw64/include",
-            "Math/src",
-            "Util/src",
-            "Glad/include"
-        }
-        libdirs {
-            "D:/msys64/mingw64/lib"
-        }
-        links {
-            "freeimage",
-            "Math",
-            "Util",
-            "Glad"
-        }
 
-    --Global unit testing project for all the workspace
-    project "UnitTest"
-        location "%{prj.name}"
-        language "C++"
-        architecture "x64"
-        kind "ConsoleApp"
-        cppdialect "gnu++17"
-        files {
-            "%{prj.name}/src/**"
-        }
-        includedirs {
-            "D:/msys64/mingw64/include",
-            "AI/src",
-            "Math/src",
-            "GL/src",
-            "Glad/include"
-        }
-        libdirs {
-            "D:/msys64/mingw64/lib"
-        }
-        links {
-            "AI",
-            "Math",
-            "GL",
-            "Glad",
-            "glfw3",
-            "freeimage"
-        }
-    
-    -- RTSandbox, well... a sandbox
+    -- Example application using the RT static library to render something
     project "RTSandbox"
         location "%{prj.name}"
         language "C++"
@@ -194,7 +193,12 @@ workspace "TP"
         }
         linkoptions { "-fopenmp" }
 
-    -- AI is containing mostly all the tools I had to develop during my AI courses
+-------------------------------------------------------------------------------
+-- Artificial Intelligence
+-------------------------------------------------------------------------------
+
+    -- This projects aims to be a useful library gathering most AI algorithms
+    -- seen during class & courses.
     project "AI"
         location "%{prj.name}"
         language "C++"
@@ -215,7 +219,7 @@ workspace "TP"
             "Math"
         }
 
-    -- AI Showoff
+    -- Project showing off some Pathfinding and Finite state machines
     project "Gamagochi"
         location "%{prj.name}"
         language "C++"
@@ -245,4 +249,34 @@ workspace "TP"
         }
         defines {
             "_WIN32"
+        }
+-------------------------------------------------------------------------------
+-- Unit Tests
+-------------------------------------------------------------------------------
+    project "UnitTest"
+        location "%{prj.name}"
+        language "C++"
+        architecture "x64"
+        kind "ConsoleApp"
+        cppdialect "gnu++17"
+        files {
+            "%{prj.name}/src/**"
+        }
+        includedirs {
+            "D:/msys64/mingw64/include",
+            "AI/src",
+            "Math/src",
+            "GL/src",
+            "Glad/include"
+        }
+        libdirs {
+            "D:/msys64/mingw64/lib"
+        }
+        links {
+            "AI",
+            "Math",
+            "GL",
+            "Glad",
+            "glfw3",
+            "freeimage"
         }

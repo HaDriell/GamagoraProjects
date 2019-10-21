@@ -20,3 +20,11 @@ HitResult Instance::hit(const vec3& position, const vec3& direction)
 
     return result;
 }
+
+bool Instance::hitBoundingBox(const vec3& position, const vec3& direction)
+{
+    //Inverse Tranform the ray to Model space
+    vec3 localPosition = transform.multiplyInverse(position, 1);
+    vec3 localDirection = transform.multiplyInverse(direction, 0).normalize();
+    return intersectBoundingBox(localPosition, localDirection);
+}

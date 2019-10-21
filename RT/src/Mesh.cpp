@@ -63,11 +63,14 @@ MeshBVH::~MeshBVH()
     if (right) delete right; 
 }
 
-MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
+MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int maxTriangles, int maxLevels)
 {
+    //Debug info
+    level = maxLevels;
+
+    //Build the Bounding Box
     box.min = vec3(std::numeric_limits<float>::max());
     box.max = vec3(std::numeric_limits<float>::min());
-
     for (Triangle* t : triangles)
     {
         //Expand min
@@ -80,121 +83,173 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int level)
         box.max = __max_XYZ(box.max, t->vertex2);
     }
 
-    if (triangles.size() <= 2 || level > 16)
+    //Check if subdivision should be done
+    if (triangles.size() <=  maxTriangles || maxLevels <= 1)
     {
-        //Leaf node. Simply store the triangles as is
+        //Bottom of the tree or small batch of Triangles, set this MeshBVH instance as a leaf node
         this->triangles = triangles;
         this->left = nullptr;
         this->right = nullptr;
     } else {
-        //sort the triangles
-        //Intermediate node. subdivide.
+        //Intermediate node in the tree. Split the current vector into 2 subdivisions using the widest axis
 
         std::vector<Triangle*> leftTriangles;
         std::vector<Triangle*> rightTriangles;
 
-        //Find which axis has the highest delta
+        //Find the axis that should be cut
         float dx = box.max.x - box.min.x;
         float dy = box.max.y - box.min.y;
         float dz = box.max.z - box.min.z;
+        bool X_CUT = dx >= dy && dx >= dz;
+        bool Y_CUT = dy >= dx && dy >= dz && !X_CUT;
+        bool Z_CUT = dz >= dx && dz >= dy && !X_CUT && !Y_CUT;
 
+        //Split each Triangle into either left or right
         for (Triangle* t : triangles)
         {
             //Subdivide along X
-            if (dx > dy && dx > dz)
+            if (X_CUT)
             {
-                if (__compute_min_on_x(t) < box.min.x + dx / 2)
+                if (__compute_min_on_x(t) <= box.min.x + dx / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
             }
+            
             //Subdivide along Y
-            else if (dy > dx && dy > dz)
+            if (Y_CUT)
             {
-                if (__compute_min_on_y(t) < box.min.y + dy / 2)
+                if (__compute_min_on_y(t) <= box.min.y + dy / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
             }
+            
             //Subdivide along Z
-            if (dz > dx && dz > dy)
+            if (Z_CUT)
             {
-                if (__compute_min_on_z(t) < box.min.z + dz / 2)
+                if (__compute_min_on_z(t) <= box.min.z + dz / 2)
                     leftTriangles.push_back(t);
                 else
                     rightTriangles.push_back(t);
             }
         }
 
-        //This is undivisible using this method
+        //Special case : cannot subdivide using this heuristic anymore (stacked triangles)
         if (leftTriangles.empty() || rightTriangles.empty())
         {
+            //Behave like a botom level of the MeshBVH 
+            this->triangles = triangles;
             this->left = nullptr;
             this->right = nullptr;
-            this->triangles = triangles;
-        } else {
-            this->left  =  new MeshBVH(leftTriangles, level + 1);
-            this->right = new MeshBVH(rightTriangles, level + 1);
+            return;
         }
+
+        //Subdivide
+        this->left  =  new MeshBVH(leftTriangles, maxTriangles, maxLevels - 1);
+        this->right = new MeshBVH(rightTriangles, maxTriangles, maxLevels - 1);
     }
 }
 
 bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
 {
-    // if (intersectAABB(position, direction, box, distance, hitPoint, normal))
-    // {
-    //     if (triangles.empty())
-    //     {
-    //         if (left->intersect(position, direction, distance, hitPoint, normal)) return true;
-    //         if (right->intersect(position, direction, distance, hitPoint, normal)) return true;
-    //     } else return true;
-    // }
-
-    float d;
-    vec3 hp;
-    vec3 n;
-    if(intersectAABB(position, direction, box, d, hp, n))
+    if (intersectAABB(position, direction, box))
     {
-        if (triangles.empty())
-        {
-            //Not a leaf, just forward the raycast
-            if (left && left->intersect(position, direction, distance, hitPoint, normal))
-                return true;
-            if (right && right->intersect(position, direction, distance, hitPoint, normal))
-                return true;
-            return false;
-        } else {
-            d = std::numeric_limits<float>::max();
+        float minimumDistance = std::numeric_limits<float>::max();
+        vec3 minimumHitPoint;
+        vec3 minimumNormal;
 
-            float currentDistance;
-            vec3 currentHitPoint;
-            vec3 currentNormal;
-            for (Triangle* t : triangles)
+        float currentDistance;
+        vec3 currentHitPoint;
+        vec3 currentNormal;
+
+        //Hit left child
+        if (left && left->intersect(position, direction, currentDistance, currentHitPoint, currentNormal))
+        {
+            if (currentDistance < minimumDistance)
             {
-                if (intersectTriangle(position, direction, *t, currentDistance, currentHitPoint, currentNormal) && currentDistance < d)
+                minimumDistance = currentDistance;
+                minimumHitPoint = currentHitPoint;
+                minimumNormal = currentNormal;
+            }
+        }
+
+        //Hit right child
+        if (right && right->intersect(position, direction, currentDistance, currentHitPoint, currentNormal))
+        {
+            if (currentDistance < minimumDistance)
+            {
+                minimumDistance = currentDistance;
+                minimumHitPoint = currentHitPoint;
+                minimumNormal = currentNormal;
+            }
+        }
+
+        //Hit Triangles
+        for (Triangle* t : triangles)
+        {
+            if (intersectTriangle(position, direction, *t, currentDistance, currentHitPoint, currentNormal))
+            {
+                if (currentDistance < minimumDistance)
                 {
-                    d = currentDistance;
-                    hp = currentHitPoint;
-                    n = currentNormal;
+                    minimumDistance = currentDistance;
+                    minimumHitPoint = currentHitPoint;
+                    minimumNormal = currentNormal;
                 }
             }
+        }
 
-            if (d < std::numeric_limits<float>::max())
-            {
-                distance = d;
-                hitPoint = hp;
-                normal = n;
-                return true;
-            }
+        //Hit Result
+        if (minimumDistance < std::numeric_limits<float>::max())
+        {
+            distance = minimumDistance;
+            hitPoint = minimumHitPoint;
+            normal = minimumNormal;
+            return true;
         }
     }
     return false;
 }
 
+AABB MeshBVH::get_bounding_box() const
+{
+    return box;
+}
+
+
+vec3 Mesh::get_centroid() const
+{
+    vec3 centroid = vec3();
+    float area = 0;
+
+    for (const Triangle* t : triangles)
+    {
+        vec3 edge1 = t->vertex1 - t->vertex0;
+        vec3 edge2 = t->vertex2 - t->vertex0;
+
+        //Compute triangle Centroid & Area
+        vec3 tCentroid = (t->vertex0 + t->vertex1 + t->vertex2) / 3.f;
+        float tArea = 0.5 * edge1.cross(edge2).length();
+
+        //Sum
+        centroid += tArea * tCentroid;
+        area += tArea;
+    }
+    centroid /= area;
+    return centroid;
+}
+
+AABB Mesh::get_bounding_box() const
+{
+    if (bvh)
+        return bvh->get_bounding_box();
+    return AABB();
+}
+
 bool Mesh::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
 {
-//Legacy
-#if 1
+//Legacy render
+#if 0
     {
         //Debugging old way of doing things
         distance = std::numeric_limits<float>::max();
@@ -215,9 +270,10 @@ bool Mesh::intersect(const vec3& position, const vec3& direction, float& distanc
     }
 #else
 
-    if (bvh)
-        return bvh->intersect(position, direction, distance, hitPoint, normal);
-    return false;
+    if (!bvh)
+        return false;
+
+    return bvh->intersect(position, direction, distance, hitPoint, normal);
 #endif
 }
 
@@ -266,6 +322,7 @@ void Mesh::set(const std::vector<vec3> vertices)
         triangles.push_back(t);
     }
 
+    //Compute BVH
     bvh = new MeshBVH(triangles, 0);
 }
 
@@ -435,6 +492,8 @@ void Mesh::load_obj_file(const std::string& path)
     while (std::getline(file, line))
     {
         std::istringstream stream(line);
+        stream >> std::ws;
+
         std::string header;
         if (std::getline(stream, header, ' '))
         {

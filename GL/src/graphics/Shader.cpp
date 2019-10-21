@@ -10,7 +10,9 @@ int __compile_shader(unsigned int shaderType, const std::string& source);
 int __compile_program(const ShaderSources& sources);
 
 
-Shader::Shader() : handle(0) {}
+Shader::Shader() 
+{
+}
 
 Shader::~Shader()
 {
@@ -153,7 +155,7 @@ int __compile_shader(unsigned int shaderType, const std::string& source)
 
 int __compile_program(const ShaderSources& sources)
 {
-    int program = 0;
+    unsigned int program = 0;
 
     //Compile Shaders
     std::vector<int> shaders;
@@ -191,12 +193,11 @@ int __compile_program(const ShaderSources& sources)
             {
                 glDetachShader(program, shader);
             }
-            //Delete program
+
+            //Clean program
             glDeleteProgram(program);
             program = 0;
         }
-
-        //Don't care about validation for now
     }
 
     //Clean-Up Shaders in any case
@@ -205,6 +206,5 @@ int __compile_program(const ShaderSources& sources)
         glDeleteShader(shader);
     }
 
-    //Return program
     return program;
 }

@@ -1,7 +1,23 @@
 #pragma once
 
-#include "maths.h"
-#include "Mesh.h"
-#include "Shader.h"
+#include <memory>
 
-void drawTriangles(unsigned int vertexArray, unsigned int indexBuffer, unsigned int count);
+#include "maths.h"
+
+#include "Shader.h"
+#include "VertexArray.h"
+
+
+class Render
+{
+public:
+    static void Debug();
+
+    static void Init();
+    static void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
+
+    static void ClearColor(const vec4& color);
+    static void Clear();
+
+    static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<IndexBuffer>& indexBuffer);
+};

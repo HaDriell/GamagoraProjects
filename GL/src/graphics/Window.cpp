@@ -4,6 +4,7 @@
 
 #include "../Events.h"
 
+void error_callback(int error, const char* description);
 
 //Start without initializing anything
 int Window::windowCount = 0;
@@ -127,6 +128,8 @@ Window::Window(const WindowSettings& settings)
         if (!glfwInit())
         {
             std::cout << "Failed to initialize GLFW !" << std::endl;
+        } else {
+            glfwSetErrorCallback(error_callback);
         }
     }
     windowCount++;
@@ -247,4 +250,11 @@ void Window::close()
 bool Window::isVisible() const
 {
     return glfwGetWindowAttrib(handle, GLFW_VISIBLE) == GLFW_TRUE;
+}
+
+
+void error_callback(int error, const char* description)
+{
+    std::string errorString(description);
+    std::cout << "GLFW Error(" << error << ") : " << errorString << std::endl;
 }

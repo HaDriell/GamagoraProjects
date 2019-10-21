@@ -164,7 +164,7 @@ vec3 operator+(float value, const vec3& left)
 
 vec3 operator-(float value, const vec3& left)
 {
-    return left - value;
+    return left + (-value);
 }
 
 vec3 operator*(float value, const vec3& left)
@@ -238,6 +238,11 @@ vec3 vec3::cross(const vec3& v) const
 vec3 vec3::reflect(const vec3& normal) const
 {
     return *this - 2.0f * this->dot(normal) * normal;
+}
+
+vec3 vec3::inverse() const
+{
+    return vec3(1.f / x, 1.f / y, 1.f / z);
 }
 
 const vec3 vec3::X = vec3(1, 0, 0);

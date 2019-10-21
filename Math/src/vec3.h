@@ -29,6 +29,7 @@ struct vec3
     float dot(const vec3& v) const;
     vec3 cross(const vec3& v) const;
     vec3 reflect(const vec3& normal) const;
+    vec3 inverse() const;
 };
 
 vec3 operator-(const vec3& v);

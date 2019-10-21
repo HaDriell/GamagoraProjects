@@ -9,8 +9,8 @@
 struct WindowSettings
 {
     std::string title  = "GL Window";
-    int glMajorVersion = 3; 
-    int glMinorVersion = 2;
+    int glMajorVersion = 4; 
+    int glMinorVersion = 5;
     int width          = 800;
     int height         = 450;
     bool decorated     = true;

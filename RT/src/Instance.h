@@ -26,8 +26,12 @@ struct Instance
     Material material;
 
     HitResult hit(const vec3& position, const vec3& direction);
+    bool hitBoundingBox(const vec3& position, const vec3& direction);
     
     virtual ~Instance();
+    virtual vec3 get_centroid() const = 0;
+    virtual AABB get_bounding_box() const = 0;
+    virtual bool intersectBoundingBox(const vec3& position, const vec3& direction) const = 0;
     virtual HitResult intersect(const vec3& position, const vec3& direction) = 0;
     virtual vec3 get_random_point_on_surface(std::default_random_engine& random, float bias) = 0;
 };

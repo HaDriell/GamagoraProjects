@@ -8,13 +8,28 @@
 #include "PointLight.h"
 #include "Camera.h"
 
+class SceneBVH
+{
+private:
+    AABB box;
+    SceneBVH* left;
+    SceneBVH* right;
+    std::vector<Instance*> instances;
+    int level;
+    
+public:
+    SceneBVH(const std::vector<Instance*>& instances, int maxInstances = 4, int maxLevels = 15);
+    ~SceneBVH();
+    HitResult raycast(const vec3& position, const vec3& direction) const;
+};
+
 struct Scene
 {
     //Scene rendering configuration
-    unsigned int    pixel_sampling = 5;
+    unsigned int    pixel_sampling = 10;
     unsigned int    light_sampling = 10;
-    unsigned int    indirect_illumination_sampling = 5;
-    unsigned int    ray_max_bounce = 2;
+    unsigned int    indirect_illumination_sampling = 1;
+    unsigned int    ray_max_bounce = 5;
     float           bias           = 1e-4;
 
     Camera          camera;
@@ -22,6 +37,7 @@ struct Scene
     //Scene objects
     std::vector<PointLight*>    pointLights;
     std::vector<Instance*>      instances;
+    SceneBVH*                   bvh = nullptr;
 
     SphereInstance* createSphere(const vec3& position, float radius);
     MeshInstance*   createMesh();

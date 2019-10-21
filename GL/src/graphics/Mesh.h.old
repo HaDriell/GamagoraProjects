@@ -1,0 +1,25 @@
+#pragma once
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "maths.h"
+
+#include "Shader.h"
+
+
+class Mesh
+{
+private:
+    std::shared_ptr<VertexArray> vertexArray;
+    std::shared_ptr<IndexBuffer> indexBuffer;
+
+public:
+    Mesh();
+    ~Mesh();
+    void destroy();
+
+    void loadFromOBJ(const std::string& path);
+    void loadFromMemory(std::vector<unsigned int>& indices, const std::vector<vec3>& vertices, const std::vector<vec3>& normals, const std::vector<vec2>& uvs);
+};

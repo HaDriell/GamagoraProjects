@@ -3,30 +3,10 @@
 #include <limits>
 #include <math.h>
 
-bool intersectPlane(const vec3& position, const vec3& direction, const vec3& planeNormal, const vec3& pointOnPlane, float& distance, vec3& hitPoint)
-{
-    float d = direction.dot(planeNormal);
-
-    //Parallel test
-    if (d < 1e-6)
-        return false;
-    vec3 ptr = (pointOnPlane - position);
-    float t = ptr.dot(planeNormal) / d;
-
-    //Behind test
-    if (t < 0)
-        return false;
-    
-    distance = t;
-    hitPoint = position + direction * t;
-    return true;
-}
-
-
 //https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 bool intersectAABB(const vec3& position, const vec3& direction, const AABB& aabb)
 {
-    vec3 invD = 1.f / direction;
+    vec3 invD = direction.inverse();
 
     float txmin = (aabb.min.x - position.x) * invD.x;
     float txmax = (aabb.max.x - position.x) * invD.x;

@@ -9,6 +9,27 @@
 
 #include <random>
 
+#define USE_SCENE_BVH 0
+
+
+static inline vec3 __min_XYZ(const vec3& a, const vec3& b)
+{
+    vec3 out;
+    out.x = std::min(a.x, b.x);
+    out.y = std::min(a.y, b.y);
+    out.z = std::min(a.z, b.z);
+    return out;
+}
+
+static inline vec3 __max_XYZ(const vec3& a, const vec3& b)
+{
+    vec3 out;
+    out.x = std::max(a.x, b.x);
+    out.y = std::max(a.y, b.y);
+    out.z = std::max(a.z, b.z);
+    return out;
+}
+
 vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level, std::default_random_engine& entropy);
 vec3 get_point_light_illumination(const Scene& scene, const PointLight& light, const HitResult& hit);
 vec3 get_indirect_surface_illumination(const Scene& scene, const HitResult& hit, int level, std::default_random_engine& entropy);
@@ -18,6 +39,9 @@ vec3 get_direct_surface_illumination(const Scene& scene, const HitResult& hit, s
 HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 {
     HitResult hit;
+#if USE_SCENE_BVH
+    hit = bvh->raycast(position, direction);
+#else
     for (Instance* current : instances)
     {
         HitResult result = current->hit(position, direction);
@@ -26,6 +50,7 @@ HitResult Scene::raycast(const vec3& position, const vec3& direction) const
             hit = result;
         }
     }
+#endif
     return hit;
 }
 
@@ -147,6 +172,13 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
 
 void Scene::render()
 {
+
+#if USE_SCENE_BVH
+    //Compute BVH
+    if (bvh) delete bvh;
+    bvh = new SceneBVH(instances, 4, 15);
+#endif
+
     //Clear the framebuffer before rendering
     camera.framebuffer.clear();
 
@@ -161,6 +193,7 @@ void Scene::render()
     vec3 v = (rotation * vec3::Y).normalize();
     vec3 w = (rotation * vec3::Z).normalize();
 
+#if 0
     std::cout << "Camera Settings" << std::endl;
     std::cout << "u: " << u << std::endl;
     std::cout << "v: " << v << std::endl;
@@ -168,18 +201,30 @@ void Scene::render()
     std::cout << "focalDistance: " << focalDistance << std::endl;
     std::cout << "Framebuffer: " << camera.framebuffer.width << "x" << camera.framebuffer.height << std::endl;
     std::cout << "Scale:" << scale << std::endl;
+#endif
+
+
+
 
     Timer timer;
     timer.reset();
-    std::default_random_engine entropy;
 
-    #pragma omp parallel for
+    std::cout << "Rendering Scene. Please wait " << std::endl;
+    
+    int progress = 0;
     for (unsigned int y = 0; y < camera.framebuffer.height; y++)
     {
+        progress = ((y + 1) * 100 / camera.framebuffer.height);
+        std::cout << "Progress " << progress << "/100%"  << "\r" << std::flush;
+
+        #pragma omp parallel for
         for (unsigned int x = 0; x < camera.framebuffer.width; x++)
         {
-            std::uniform_real_distribution<> dist(0, 1);
+            std::default_random_engine entropy;
+            unsigned int pixelHash = x + y * camera.framebuffer.width;
+            entropy.seed(std::chrono::system_clock::now().time_since_epoch().count() + pixelHash);
 
+            std::uniform_real_distribution<> dist(0, 1);
             vec3 color = vec3(0, 0, 0);
             for (int sample = 0; sample < pixel_sampling; sample++)
             {
@@ -194,6 +239,7 @@ void Scene::render()
             camera.framebuffer.write(x, y, color, 1);
         }
     }
+    std::cout << std::endl;
     std::cout << "Rendering time : " << timer.elapsed() << " seconds." << std::endl;
 }
 
@@ -258,4 +304,140 @@ PointLight* Scene::createLight(const vec3& position, float intensity, const vec3
     pointLights.push_back(instance);
 
     return instance;
+}
+
+
+SceneBVH::SceneBVH(const std::vector<Instance*>& instances, int maxInstances, int maxLevels)
+{
+    //Debug info
+    level = maxLevels;
+
+    //build the Bounding Box
+    box.min = vec3(std::numeric_limits<float>::max());
+    box.max = vec3(std::numeric_limits<float>::min());
+
+    for (Instance* instance : instances)
+    {
+        AABB instanceBoundingBox = instance->get_bounding_box();
+        box.min = __min_XYZ(box.min, instanceBoundingBox.min);
+        box.max = __max_XYZ(box.max, instanceBoundingBox.max);
+    }
+
+    for (int l = 0; l < maxLevels; l++)
+        std::cout << " ";
+    std::cout << "[" << box.min << " ~ " << box.max << "]" << std::endl;
+
+
+    //Check if subdivision should be done
+    if (instances.size() <= maxInstances || maxLevels <= 1)
+    {
+        //Leaf. no SceneBVH children
+        this->instances = instances;
+        this->left  = nullptr;
+        this->right = nullptr;
+    } else {
+        //Node. no instances & split instances
+        std::vector<Instance*> leftInstances;
+        std::vector<Instance*> rightInstances;
+
+        //Find the axis that should be cut
+        float dx = box.max.x - box.min.x;
+        float dy = box.max.y - box.min.y;
+        float dz = box.max.z - box.min.z;
+        bool X_CUT = dx >= dy && dx >= dz;
+        bool Y_CUT = dy >= dx && dy >= dz && !X_CUT;
+        bool Z_CUT = dz >= dx && dz >= dy && !X_CUT && !Y_CUT;
+
+        for (Instance* instance : instances)
+        {
+            vec3 centroid = instance->get_centroid();
+            //Subdivide along X
+            if (X_CUT)
+            {
+                if (centroid.x <= box.min.x + dx / 2)
+                    leftInstances.push_back(instance);
+                else
+                    rightInstances.push_back(instance);
+            }
+            
+            //Subdivide along Y
+            if (Y_CUT)
+            {
+                if (centroid.y <= box.min.y + dy / 2)
+                    leftInstances.push_back(instance);
+                else
+                    rightInstances.push_back(instance);
+            }
+            
+            //Subdivide along Z
+            if (Z_CUT)
+            {
+                if (centroid.z <= box.min.z + dz / 2)
+                    leftInstances.push_back(instance);
+                else
+                    rightInstances.push_back(instance);
+            }
+        }
+        
+
+        //Special case : cannot subdivide using this heuristic anymore (stacked Instances)
+        if (leftInstances.empty() || rightInstances.empty())
+        {
+            //Behave like a botom level of the BVH
+            this->instances = instances;
+            this->left = nullptr;
+            this->right = nullptr;
+            return;
+        }
+
+        //Subdivide
+        this->left  = new SceneBVH(leftInstances,  maxInstances, maxLevels - 1);
+        this->right = new SceneBVH(rightInstances, maxInstances, maxLevels - 1);
+    }
+}
+
+SceneBVH::~SceneBVH()
+{
+    if (left) delete left;
+    if (right) delete right;
+}
+
+HitResult SceneBVH::raycast(const vec3& position, const vec3& direction) const
+{
+    HitResult minHit;
+
+    //Traverse self
+    if (intersectAABB(position, direction, box))
+    {
+        //Traverse left child
+        if (left)
+        {
+            HitResult hit = left->raycast(position, direction);
+            if (hit.hit && hit.distance < minHit.distance)
+            {
+                minHit = hit;
+            }
+        } 
+
+        //Traverse right child
+        if (right)
+        {
+            HitResult hit = right->raycast(position, direction);
+            if (hit.hit && hit.distance < minHit.distance)
+            {
+                minHit = hit;
+            } 
+        }
+
+        //Traverse leaves
+        for (Instance* instance : instances)
+        {
+            HitResult hit = instance->hit(position, direction);
+            if (hit.hit && hit.distance < minHit.distance)
+            {
+                minHit = hit;
+            }
+        }
+    }
+    return minHit;
 }
