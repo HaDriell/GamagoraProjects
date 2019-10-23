@@ -24,12 +24,13 @@ struct vec3
     float length() const;
     float length2() const;
     vec3 normalize() const;
-    float distance(const vec3& v) const;
-    float distance2(const vec3& v) const;
-    float dot(const vec3& v) const;
-    vec3 cross(const vec3& v) const;
-    vec3 reflect(const vec3& normal) const;
     vec3 inverse() const;
+
+    static float distance(const vec3& a, const vec3& b);
+    static float distance2(const vec3& a, const vec3& b);
+    static float dot(const vec3& a, const vec3& b);
+    static vec3 cross(const vec3& a, const vec3& b);
+    static vec3 reflect(const vec3& direction, const vec3& normal);
 };
 
 vec3 operator-(const vec3& v);

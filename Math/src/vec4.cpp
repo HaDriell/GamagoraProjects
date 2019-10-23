@@ -226,21 +226,21 @@ vec4 vec4::normalize() const
     return vec4();
 }
 
-float vec4::distance(const vec4& v) const
+float vec4::distance(const vec4& a, const vec4& b)
 {
-    return std::sqrt(distance(v));
+    return std::sqrt(distance2(a, b));
 }
 
-float vec4::distance2(const vec4& v) const
+float vec4::distance2(const vec4& a, const vec4& b)
 {
-    float dx = x - v.x;
-    float dy = y - v.y;
-    float dz = z - v.z;
-    float dw = w - v.w;
-    return dx*dx + dy*dy + dz*dz + dw*dw;
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    float dz = a.z - b.z;
+    float dw = a.w - b.w;
+    return dx * dx + dy * dy + dz * dz + dw * dw;
 }
 
-float vec4::dot(const vec4& v) const
+float vec4::dot(const vec4& a, const vec4& b)
 {
-    return x*v.x + y*v.y + z*v.z + w*v.w;
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }

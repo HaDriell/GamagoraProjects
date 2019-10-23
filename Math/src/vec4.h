@@ -13,9 +13,10 @@ struct vec4
     float length() const;
     float length2() const;
     vec4 normalize() const;
-    float distance(const vec4& v) const;
-    float distance2(const vec4& v) const;
-    float dot(const vec4& v) const;
+
+    static float distance(const vec4& a, const vec4& b);
+    static float distance2(const vec4& a, const vec4& b);
+    static float dot(const vec4& a, const vec4& b);
 };
 
 vec4 operator-(vec4& v);

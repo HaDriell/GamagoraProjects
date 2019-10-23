@@ -156,7 +156,7 @@ std::vector<vec2> find_path_a_star(const WeightMap& terrain, const vec2& start, 
     ATile startTile;
     map.get(start, startTile);
     startTile.g = 0;
-    startTile.f = startTile.g + start.distance2(end);
+    startTile.f = startTile.g + vec2::distance2(start, end);
     openList.push_back(startTile);
 
     while (!openList.empty()) // might change
@@ -208,7 +208,7 @@ std::vector<vec2> find_path_a_star(const WeightMap& terrain, const vec2& start, 
                 
                 //Update the tile to have current as a parent
                 tile.g = cost;
-                tile.f = cost + tile.position.distance2(end);
+                tile.f = cost + vec2::distance2(tile.position, end);
                 tile.parent = current.position;
                 map.set(x, y, tile);
 
