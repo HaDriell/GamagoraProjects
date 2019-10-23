@@ -6,4 +6,6 @@
 #include "graphics/Texture.h"
 #include "graphics/Buffer.h"
 
+#include "graphics/Mesh.h"
+
 #include "graphics/Render.h"

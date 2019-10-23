@@ -72,33 +72,48 @@ class VertexBuffer
 {
 private:
     unsigned int handle;
+    size_t       size;
     BufferLayout layout;
+
+    void bufferData(const void* data, size_t size);
 
 public:
     VertexBuffer();
-    VertexBuffer(float* vertices, size_t count);
     ~VertexBuffer();
 
     void bind() const;
     void unbind() const;
 
     const BufferLayout& getLayout() const;
-    void setLayout(const BufferLayout& layout);
+    void defineLayout(const BufferLayout& layout);
+
+    template<typename T>
+    void defineData(const std::vector<T> elements)
+    {
+        const void* data = elements.data();
+        size_t      size = elements.size() * sizeof(T);
+        bufferData(data, size);
+    }
 };
 
 class IndexBuffer
 {
 private:
     unsigned int handle;
+    size_t       size;
+    unsigned int format;
     unsigned int count;
 
 public:
     IndexBuffer();
-    IndexBuffer(unsigned int* indices, size_t count);
     ~IndexBuffer();
 
     void bind() const;
     void unbind() const;
 
+    void defineData(const std::vector<unsigned short> elements);
+    void defineData(const std::vector<unsigned int> elements);
+
     unsigned int getCount() { return count; }
+    unsigned int getFormat() { return format; }
 };

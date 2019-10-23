@@ -14,6 +14,7 @@ void Render::Debug()
 
 void Render::Init()
 {
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -37,5 +38,5 @@ void Render::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray, const 
 {
     vertexArray->bind();
     indexBuffer->bind();
-    glDrawElements(GL_TRIANGLES, indexBuffer->getCount(), GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, indexBuffer->getCount(), indexBuffer->getFormat(), nullptr);
 }

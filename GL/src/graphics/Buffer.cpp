@@ -55,14 +55,9 @@ unsigned int VertexAttribute::getComponentCount() const
 
 
 
-VertexBuffer::VertexBuffer() : handle(0) {}
-
-VertexBuffer::VertexBuffer(float* vertices, size_t count)
+VertexBuffer::VertexBuffer() : size(0), handle(0), layout()
 {
-    size_t buffer_size = sizeof(float) * count;
     glGenBuffers(1, &handle);
-    glBindBuffer(GL_ARRAY_BUFFER, handle);
-    glBufferData(GL_ARRAY_BUFFER, buffer_size, vertices, GL_STATIC_DRAW);
 }
 
 VertexBuffer::~VertexBuffer()
@@ -85,9 +80,15 @@ const BufferLayout& VertexBuffer::getLayout() const
     return layout;
 }
 
-void VertexBuffer::setLayout(const BufferLayout& layout)
+void VertexBuffer::defineLayout(const BufferLayout& layout)
 {
     this->layout = layout;
+}
+
+void VertexBuffer::bufferData(const void* data, size_t size)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, handle);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
 
 
@@ -98,14 +99,9 @@ void VertexBuffer::setLayout(const BufferLayout& layout)
 
 
 
-IndexBuffer::IndexBuffer() : handle(0), count(0) {}
-
-IndexBuffer::IndexBuffer(unsigned int* indices, size_t count) : count(count)
+IndexBuffer::IndexBuffer() : handle(0), size(0), format(GL_UNSIGNED_SHORT), count(0)
 {
-    size_t buffer_size = sizeof(unsigned int) * count;
     glGenBuffers(1, &handle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handle);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer_size, indices, GL_STATIC_DRAW);
 }
 
 IndexBuffer::~IndexBuffer()
@@ -121,4 +117,24 @@ void IndexBuffer::bind() const
 void IndexBuffer::unbind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void IndexBuffer::defineData(const std::vector<unsigned short> elements)
+{
+    const void* data = elements.data();
+    count  = elements.size();
+    size   = elements.size() * sizeof(unsigned short);
+    format = GL_UNSIGNED_SHORT;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+}
+
+void IndexBuffer::defineData(const std::vector<unsigned int> elements)
+{
+    const void* data = elements.data();
+    count  = elements.size();
+    size   = elements.size() * sizeof(unsigned int);
+    format = GL_UNSIGNED_INT;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
