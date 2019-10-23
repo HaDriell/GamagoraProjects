@@ -5,6 +5,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include "Timer.h"
 
 void normalize_vertices(std::vector<vec3>& vertices);
 
@@ -322,8 +323,17 @@ void Mesh::set(const std::vector<vec3> vertices)
         triangles.push_back(t);
     }
 
+    //Update metrics
+    metrics.triangleCount = triangles.size();
+
+    Timer bvhBuildTimer;
+    bvhBuildTimer.reset();
+
     //Compute BVH
     bvh = new MeshBVH(triangles, 0);
+
+    //Update metrics
+    metrics.bvhBuildTime = bvhBuildTimer.elapsed();
 }
 
 void Mesh::load_off_file(const std::string& path)

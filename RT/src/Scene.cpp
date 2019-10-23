@@ -9,8 +9,6 @@
 
 #include <random>
 
-#define USE_SCENE_BVH 0
-
 
 static inline vec3 __min_XYZ(const vec3& a, const vec3& b)
 {
@@ -38,10 +36,10 @@ vec3 get_direct_surface_illumination(const Scene& scene, const HitResult& hit, s
 
 HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 {
+    //Increment raycastCount
+    (*const_cast<unsigned long*>(&metrics.raycastCount))++;
+    
     HitResult hit;
-#if USE_SCENE_BVH
-    hit = bvh->raycast(position, direction);
-#else
     for (Instance* current : instances)
     {
         HitResult result = current->hit(position, direction);
@@ -50,7 +48,6 @@ HitResult Scene::raycast(const vec3& position, const vec3& direction) const
             hit = result;
         }
     }
-#endif
     return hit;
 }
 
@@ -172,13 +169,6 @@ vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsi
 
 void Scene::render()
 {
-
-#if USE_SCENE_BVH
-    //Compute BVH
-    if (bvh) delete bvh;
-    bvh = new SceneBVH(instances, 4, 15);
-#endif
-
     //Clear the framebuffer before rendering
     camera.framebuffer.clear();
 
@@ -193,24 +183,16 @@ void Scene::render()
     vec3 v = (rotation * vec3::Y).normalize();
     vec3 w = (rotation * vec3::Z).normalize();
 
-#if 0
-    std::cout << "Camera Settings" << std::endl;
-    std::cout << "u: " << u << std::endl;
-    std::cout << "v: " << v << std::endl;
-    std::cout << "w: " << w << std::endl;
-    std::cout << "focalDistance: " << focalDistance << std::endl;
-    std::cout << "Framebuffer: " << camera.framebuffer.width << "x" << camera.framebuffer.height << std::endl;
-    std::cout << "Scale:" << scale << std::endl;
-#endif
 
-
-
+    //Mertic reset
+    metrics.raycastCount        = 0;
+    metrics.instanceCount       = 0;
+    metrics.intersectionCount   = 0;
+    metrics.imageRenderingTime  = 0;
 
     Timer timer;
     timer.reset();
-
-    std::cout << "Rendering Scene. Please wait " << std::endl;
-    
+    std::cout << "Rendering Scene. Please wait " << std::endl;    
     int progress = 0;
     for (unsigned int y = 0; y < camera.framebuffer.height; y++)
     {
@@ -240,7 +222,15 @@ void Scene::render()
         }
     }
     std::cout << std::endl;
-    std::cout << "Rendering time : " << timer.elapsed() << " seconds." << std::endl;
+
+    //Update Scene metrics
+    metrics.instanceCount       = instances.size();
+    metrics.imageRenderingTime  = timer.elapsed();
+
+    std::cout << "Instances      : " << metrics.instanceCount << std::endl;
+    std::cout << "Raycasts       : " << metrics.raycastCount << std::endl;
+    std::cout << "Intersections  : " << metrics.intersectionCount << std::endl;
+    std::cout << "Rendering time : " << metrics.imageRenderingTime << std::endl;
 }
 
 Scene::~Scene()
@@ -249,8 +239,8 @@ Scene::~Scene()
         delete instance;
     instances.clear();
     for(PointLight* instance : pointLights)
-        delete instance;    
-    pointLights.clear();    
+        delete instance;
+    pointLights.clear();
 }
 
 SphereInstance* Scene::createSphere(const vec3& position, float radius)
@@ -304,140 +294,4 @@ PointLight* Scene::createLight(const vec3& position, float intensity, const vec3
     pointLights.push_back(instance);
 
     return instance;
-}
-
-
-SceneBVH::SceneBVH(const std::vector<Instance*>& instances, int maxInstances, int maxLevels)
-{
-    //Debug info
-    level = maxLevels;
-
-    //build the Bounding Box
-    box.min = vec3(std::numeric_limits<float>::max());
-    box.max = vec3(std::numeric_limits<float>::min());
-
-    for (Instance* instance : instances)
-    {
-        AABB instanceBoundingBox = instance->get_bounding_box();
-        box.min = __min_XYZ(box.min, instanceBoundingBox.min);
-        box.max = __max_XYZ(box.max, instanceBoundingBox.max);
-    }
-
-    for (int l = 0; l < maxLevels; l++)
-        std::cout << " ";
-    std::cout << "[" << box.min << " ~ " << box.max << "]" << std::endl;
-
-
-    //Check if subdivision should be done
-    if (instances.size() <= maxInstances || maxLevels <= 1)
-    {
-        //Leaf. no SceneBVH children
-        this->instances = instances;
-        this->left  = nullptr;
-        this->right = nullptr;
-    } else {
-        //Node. no instances & split instances
-        std::vector<Instance*> leftInstances;
-        std::vector<Instance*> rightInstances;
-
-        //Find the axis that should be cut
-        float dx = box.max.x - box.min.x;
-        float dy = box.max.y - box.min.y;
-        float dz = box.max.z - box.min.z;
-        bool X_CUT = dx >= dy && dx >= dz;
-        bool Y_CUT = dy >= dx && dy >= dz && !X_CUT;
-        bool Z_CUT = dz >= dx && dz >= dy && !X_CUT && !Y_CUT;
-
-        for (Instance* instance : instances)
-        {
-            vec3 centroid = instance->get_centroid();
-            //Subdivide along X
-            if (X_CUT)
-            {
-                if (centroid.x <= box.min.x + dx / 2)
-                    leftInstances.push_back(instance);
-                else
-                    rightInstances.push_back(instance);
-            }
-            
-            //Subdivide along Y
-            if (Y_CUT)
-            {
-                if (centroid.y <= box.min.y + dy / 2)
-                    leftInstances.push_back(instance);
-                else
-                    rightInstances.push_back(instance);
-            }
-            
-            //Subdivide along Z
-            if (Z_CUT)
-            {
-                if (centroid.z <= box.min.z + dz / 2)
-                    leftInstances.push_back(instance);
-                else
-                    rightInstances.push_back(instance);
-            }
-        }
-        
-
-        //Special case : cannot subdivide using this heuristic anymore (stacked Instances)
-        if (leftInstances.empty() || rightInstances.empty())
-        {
-            //Behave like a botom level of the BVH
-            this->instances = instances;
-            this->left = nullptr;
-            this->right = nullptr;
-            return;
-        }
-
-        //Subdivide
-        this->left  = new SceneBVH(leftInstances,  maxInstances, maxLevels - 1);
-        this->right = new SceneBVH(rightInstances, maxInstances, maxLevels - 1);
-    }
-}
-
-SceneBVH::~SceneBVH()
-{
-    if (left) delete left;
-    if (right) delete right;
-}
-
-HitResult SceneBVH::raycast(const vec3& position, const vec3& direction) const
-{
-    HitResult minHit;
-
-    //Traverse self
-    if (intersectAABB(position, direction, box))
-    {
-        //Traverse left child
-        if (left)
-        {
-            HitResult hit = left->raycast(position, direction);
-            if (hit.hit && hit.distance < minHit.distance)
-            {
-                minHit = hit;
-            }
-        } 
-
-        //Traverse right child
-        if (right)
-        {
-            HitResult hit = right->raycast(position, direction);
-            if (hit.hit && hit.distance < minHit.distance)
-            {
-                minHit = hit;
-            } 
-        }
-
-        //Traverse leaves
-        for (Instance* instance : instances)
-        {
-            HitResult hit = instance->hit(position, direction);
-            if (hit.hit && hit.distance < minHit.distance)
-            {
-                minHit = hit;
-            }
-        }
-    }
-    return minHit;
 }

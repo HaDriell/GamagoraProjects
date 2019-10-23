@@ -8,23 +8,20 @@
 #include "PointLight.h"
 #include "Camera.h"
 
-class SceneBVH
+
+struct SceneMetrics
 {
-private:
-    AABB box;
-    SceneBVH* left;
-    SceneBVH* right;
-    std::vector<Instance*> instances;
-    int level;
-    
-public:
-    SceneBVH(const std::vector<Instance*>& instances, int maxInstances = 4, int maxLevels = 15);
-    ~SceneBVH();
-    HitResult raycast(const vec3& position, const vec3& direction) const;
+    unsigned long raycastCount      = 0;
+    unsigned long instanceCount     = 0;
+    unsigned long intersectionCount = 0;
+    float imageRenderingTime        = 0;
 };
 
 struct Scene
 {
+    //Scene metrics
+    SceneMetrics    metrics;
+
     //Scene rendering configuration
     unsigned int    pixel_sampling = 10;
     unsigned int    light_sampling = 10;
@@ -37,7 +34,6 @@ struct Scene
     //Scene objects
     std::vector<PointLight*>    pointLights;
     std::vector<Instance*>      instances;
-    SceneBVH*                   bvh = nullptr;
 
     SphereInstance* createSphere(const vec3& position, float radius);
     MeshInstance*   createMesh();

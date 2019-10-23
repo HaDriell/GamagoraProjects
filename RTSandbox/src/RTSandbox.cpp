@@ -53,17 +53,18 @@ int main()
     object->material |= Material::Diffuse(0.9, 1, 1, 1);
     object->material |= Material::Reflective(0.1);
 
-
+    //Small amount of triangles
     object->mesh.load_obj_file("Love.obj");
     scene.render();
-    scene.camera.framebuffer.save("Love.png");
+    scene.camera.framebuffer.save("small.png");
 
-    object->mesh.load_obj_file("armadillo.obj");
-    object->transform.set_rotation(45, 45, 45);
+    //Medium amount of triangles
+    object->mesh.load_obj_file("bunny.obj");
     scene.render();
-    scene.camera.framebuffer.save("Armadillo.png");
+    scene.camera.framebuffer.save("medium.png");
 
-    // object->mesh.load_obj_file("tyra.obj");
-    // scene.render();
-    // scene.camera.framebuffer.save("Tyra.png");
+    //Large amount of triangles
+    object->mesh.load_obj_file("armadillo.obj");
+    scene.render();
+    scene.camera.framebuffer.save("large.png");
 }

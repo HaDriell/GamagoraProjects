@@ -7,11 +7,11 @@
 class MeshBVH
 {
 private:
-    AABB box;
-    MeshBVH* left;
-    MeshBVH* right;
-    std::vector<Triangle*> triangles;
-    int level;
+    AABB                    box;
+    MeshBVH*                left;
+    MeshBVH*                right;
+    std::vector<Triangle*>  triangles;
+    int                     level;
     
 public:
     MeshBVH(const std::vector<Triangle*>& triangles, int maxTriangles = 4, int maxLevels = 15);
@@ -21,11 +21,18 @@ public:
     bool intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const;
 };
 
+struct MeshMetrics
+{
+    unsigned long   triangleCount   = 0;
+    float           bvhBuildTime    = 0;
+};
+
 struct Mesh
 {
 private:
-    std::vector<Triangle*> triangles;
-    MeshBVH* bvh = nullptr;
+    MeshMetrics             metrics;
+    std::vector<Triangle*>  triangles;
+    MeshBVH*                bvh = nullptr;
 
 public:
     ~Mesh();

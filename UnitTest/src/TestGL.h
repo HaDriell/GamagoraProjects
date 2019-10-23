@@ -19,7 +19,7 @@ void test_gl()
     Window w = Window();
     Shader s;
     Texture t;
-    Mesh m;
+    // Mesh m;
 
     w.events().add<KeyPressedEvent>([&](const KeyPressedEvent& event)
     {
@@ -42,16 +42,16 @@ void test_gl()
             std::cout << "Loading Texture Done" << std::endl;
         }
 
-        if (event.keycode == KEY_M)
-        {
-            std::cout << "Loading Mesh" << std::endl;
-            m.loadFromOBJ("res/bunny.obj");
-            std::cout << "Loading Mesh Done" << std::endl;
-        }
+        // if (event.keycode == KEY_M)
+        // {
+        //     std::cout << "Loading Mesh" << std::endl;
+        //     m.loadFromOBJ("res/bunny.obj");
+        //     std::cout << "Loading Mesh Done" << std::endl;
+        // }
 
         if (event.keycode == KEY_R)
         {
-            m.draw(s);
+            // m.draw(s);
         }
     });
 
