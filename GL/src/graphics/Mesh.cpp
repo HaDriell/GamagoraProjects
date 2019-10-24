@@ -13,10 +13,10 @@ Mesh::Mesh()
     indices     = std::make_shared<IndexBuffer>();
 
     //Setup the layout
-    positions->defineLayout({{ VertexAttributeType::Float3, "position" }});
-    normals->defineLayout({{ VertexAttributeType::Float3, "normal" }});
-    colors->defineLayout({{ VertexAttributeType::Float3, "color" }});
-    uvs->defineLayout({{ VertexAttributeType::Float2, "uv" }});
+    positions->defineLayout(MESH_POSITION_LAYOUT);
+    normals->defineLayout(MESH_NORMAL_LAYOUT);
+    colors->defineLayout(MESH_COLOR_LAYOUT);
+    uvs->defineLayout(MESH_UV_LAYOUT);
 
     //Configure the bindings
     vertexArray->addVertexBuffer(positions);
@@ -50,7 +50,7 @@ void Mesh::setNormals(const std::vector<vec3>& normals)
     this->normals->defineData(normals);
 }
 
-void Mesh::setColors(const std::vector<vec4>& colors)
+void Mesh::setColors(const std::vector<vec3>& colors)
 {
     this->colors->defineData(colors);
 }

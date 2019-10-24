@@ -6,64 +6,171 @@
 
 #include <glad/glad.h>
 
-int __compile_shader(unsigned int shaderType, const std::string& source);
-int __compile_program(const ShaderSources& sources);
-
-
-Shader::Shader() 
+std::string getShaderTypeString(GLenum shaderType)
 {
+    switch (shaderType)
+    {
+        case GL_TESS_CONTROL_SHADER:    return "TesselationControl";
+        case GL_TESS_EVALUATION_SHADER: return "TesselationEvaluation";
+        case GL_GEOMETRY_SHADER:        return "Geometry";
+        case GL_VERTEX_SHADER:          return "Vertex";
+        case GL_FRAGMENT_SHADER:        return "Fragment";
+        case GL_COMPUTE_SHADER:         return "Compute";
+    }
+    return "Unknown";
+}
+
+Shader::Shader() : handle(0) 
+{
+    handle = glCreateProgram();
 }
 
 Shader::~Shader()
 {
-    destroy();
+    glDeleteProgram(handle);
 }
 
-void Shader::compileFile(const std::string& path)
+void Shader::debug() const
 {
-    std::ifstream file(path);
-    if (!file.is_open())
-    {
-        std::cout << "Failed to compile Shader program : File '" << path << "' not found !" << std::endl;
-        return;
-    }
-    //parse file
-    ShaderSources sources;
+    std::cout << "Shader debug" << std::endl;
 
-    unsigned int shaderSection = GL_FALSE;
-    std::string line;
-    while (std::getline(file, line))
+    if (!isLinked())
     {
-        if (line.rfind("//Vertex Shader", 0) == 0)
+        std::cout << "Program isn't linked" << std::endl;
+        bool linkFailed = true;
+        for (auto& entry : compilationStatus)
         {
-            shaderSection = GL_VERTEX_SHADER;
+            const std::string& shaderName   = entry.first;
+            bool compiled                   = compilationStatus.at(shaderName);
+            const std::string& info_log     = compilationLog.at(shaderName);
+            //Log errors
+            std::cout << shaderName << " Shader (" << (entry.second ? " OK " : "FAIL") << ")"
+            << " : " << (info_log.empty() ? "No logs " : info_log) << std::endl;
+            //Check for actual linking error
+            if (linkFailed) linkFailed = compiled;
         }
-        else if (line.rfind("//Fragment Shader", 0) == 0)
+
+        if (linkFailed)
         {
-            shaderSection = GL_FRAGMENT_SHADER;
-        }
-        else if (shaderSection)
-        {
-            sources[shaderSection] += line + "\n";
+            std::cout << "Linking Failed : " << linkingLog << std::endl;
         }
     }
 
-    compileSources(sources);
-}
-
-void Shader::compileSources(const ShaderSources& sources)
-{
-    handle = __compile_program(sources);
-}
-
-
-void Shader::destroy()
-{
-    if (handle)
+    if (!isValid())
     {
-        glDeleteProgram(handle);
-        handle = 0;
+        std::cout << "Program isn't valid" << std::endl;
+        std::cout << "Program Linking Log    : " << linkingLog << std::endl;
+        std::cout << "Program Validation Log : " << validationLog << std::endl;
     }
+
+    std::cin.get();
+}
+
+bool Shader::compile(const ShaderSources& shaderSources)
+{
+    //Clear metadata
+    compilationLog.clear();
+    compilationStatus.clear();
+    linked = false;
+    valid = false;
+
+    //Compile each shader
+    std::vector<unsigned int> shaders;
+    for (auto& shaderSource : shaderSources)
+    {
+        unsigned int shaderType = shaderSource.first;
+        const GLchar* source    = shaderSource.second.c_str();
+
+        //Create Shader
+        unsigned int shader     = glCreateShader(shaderType);
+        shaders.push_back(shader);
+
+        //Compile Shader
+        glShaderSource(shader, 1, &source, 0);
+        glCompileShader(shader);
+        //Fetch Compilation info
+        {
+            GLint maxLength = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
+            glGetShaderInfoLog(shader, maxLength, &maxLength, &info_log[0]);
+            //Fetch Compilation Status
+            GLint isCompiled = GL_FALSE;
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+            
+            //Store logs & compile status into the shader
+            std::string shaderTypeString = getShaderTypeString(shaderType);
+            compilationLog[shaderTypeString]    = std::string(info_log.begin(), info_log.end());
+            compilationStatus[shaderTypeString] = isCompiled == GL_TRUE;
+        }
+    }
+
+    //Check for successful shader compilations
+    bool canLinkProgram = true;
+    for (auto& shaderCompilation : compilationStatus)
+    {
+        if (!shaderCompilation.second)
+        {
+            canLinkProgram = false;
+            break;
+        }
+    }
+
+    //Proceed to linking only when shaders compiled
+    if (canLinkProgram)
+    {
+        //Attach shaders to program
+        for (unsigned int shader : shaders)
+        {
+            glAttachShader(handle, shader);
+        }
+
+        //Link Program
+        glLinkProgram(handle);
+        //Fetch linking info
+        {
+            GLint isLinked = GL_FALSE;
+            glGetProgramiv(handle, GL_LINK_STATUS, &isLinked);
+            GLint maxLength = 0;
+            glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
+            glGetProgramInfoLog(handle, maxLength, &maxLength, &info_log[0]);
+
+            linkingLog  = std::string(info_log.begin(), info_log.end());
+            linked      = isLinked == GL_TRUE;
+        }
+
+        if (linked)
+        {
+            glValidateProgram(handle);
+            //Fetch validation info
+            {
+                GLint isValid = GL_FALSE;
+                glGetProgramiv(handle, GL_VALIDATE_STATUS, &isValid);
+                GLint maxLength = 0;
+                glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &maxLength);
+                std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
+                glGetProgramInfoLog(handle, maxLength, &maxLength, &info_log[0]);
+
+                validationLog   = std::string(info_log.begin(), info_log.end());
+                valid           = isValid == GL_TRUE;
+            }
+        }
+
+        //Detatch shaders from program
+        for (unsigned int shader : shaders)
+        {
+            glDetachShader(handle, shader);
+        }
+    }
+    
+    //Delete shaders
+    for (unsigned int shader : shaders)
+    {
+        glDeleteShader(shader);
+    }
+
+    return valid;
 }
 
 void Shader::bind() const
@@ -127,84 +234,4 @@ void Shader::setUniform(const std::string& name, const mat4& value)
         value.m30, value.m31, value.m32, value.m33
     };
     glUniformMatrix4fv(location, 1, GL_FALSE, elements);
-}
-
-int __compile_shader(unsigned int shaderType, const std::string& source)
-{
-    int shader = glCreateShader(shaderType);
-    const GLchar* src = source.c_str();
-    glShaderSource(shader, 1, &src, 0);
-    glCompileShader(shader);
-
-    GLint isCompiled = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    if (isCompiled == GL_FALSE)
-    {
-        GLint maxLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-        std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
-        glGetShaderInfoLog(shader, maxLength, &maxLength, &info_log[0]);
-        glDeleteShader(shader);
-        shader = 0;
-
-        std::cout << "Failed to compile shader : " << info_log.data() << std::endl;
-    }
-    return shader;
-}
-
-
-int __compile_program(const ShaderSources& sources)
-{
-    unsigned int program = 0;
-
-    //Compile Shaders
-    std::vector<int> shaders;
-    for (auto& kv : sources)
-    {
-        int shader = __compile_shader(kv.first, kv.second);
-
-        if (shader)
-            shaders.push_back(shader);
-        else
-            break;
-    }
-
-    //Link program step if each shader compiled successfuly
-    if (shaders.size() == sources.size())
-    {
-        program = glCreateProgram();
-        for (int shader : shaders)
-            glAttachShader(program, shader);
-        glLinkProgram(program);
-
-        //Check for program link status
-        GLint isLinked = GL_FALSE;
-        glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
-        if (isLinked != GL_TRUE) 
-        {
-            GLint maxLength = 0;
-            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-            std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
-            glGetProgramInfoLog(program, maxLength, &maxLength, &info_log[0]);
-            std::cout << "Shader program linking failed : " << info_log.data() << std::endl;
-
-            //Clean program attachments
-            for (int shader : shaders)
-            {
-                glDetachShader(program, shader);
-            }
-
-            //Clean program
-            glDeleteProgram(program);
-            program = 0;
-        }
-    }
-
-    //Clean-Up Shaders in any case
-    for (int shader : shaders)
-    {
-        glDeleteShader(shader);
-    }
-
-    return program;
 }

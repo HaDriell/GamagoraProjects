@@ -2,6 +2,6 @@
 
 #include <string>
 
-#include "Mesh.h"
+#include "../Mesh.h"
 
-void loadFBXFile(const std::string& filename, Mesh& mesh);
+bool loadFBXFile(const std::string& filename, Mesh& mesh);

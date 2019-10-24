@@ -3,10 +3,16 @@
 //GLFW related
 #include "graphics/Window.h"
 
-//OpenGL objects related
-#include "graphics/Shader.h"
-#include "graphics/Texture.h"
+//Buffer related
 #include "graphics/Buffer.h"
+#include "graphics/VertexArray.h"
+
+//Shader related
+#include "graphics/Shader.h"
+#include "graphics/loaders/GLSL.h"
+
+//Texture related
+#include "graphics/Texture.h"
 
 //Mesh related
 #include "graphics/Mesh.h"

@@ -2,7 +2,8 @@
 call config.cmd
 
 if "%1" == "" (
-    goto help
+    start "%TARGET%" /D %TARGET% ".\bin\%CONFIG%\%TARGET%.exe"
+    exit
 ) else (
     start "%1" /D %1 ".\bin\%CONFIG%\%1.exe"
     exit

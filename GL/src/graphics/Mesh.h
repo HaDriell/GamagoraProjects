@@ -9,6 +9,12 @@
 #include "Buffer.h"
 #include "VertexArray.h"
 
+
+const BufferLayout MESH_POSITION_LAYOUT = {{ VertexAttributeType::Float3, "vertex_position" }};
+const BufferLayout MESH_NORMAL_LAYOUT   = {{ VertexAttributeType::Float3, "vertex_normal" }};
+const BufferLayout MESH_COLOR_LAYOUT    = {{ VertexAttributeType::Float3, "vertex_color" }};
+const BufferLayout MESH_UV_LAYOUT       = {{ VertexAttributeType::Float2, "vertex_uv" }};
+
 class Mesh
 {
 private:
@@ -32,6 +38,6 @@ public:
     void setIndices(const std::vector<unsigned short>& indices);
     void setPositions(const std::vector<vec3>& positions);
     void setNormals(const std::vector<vec3>& normals);
-    void setColors(const std::vector<vec4>& colors);
+    void setColors(const std::vector<vec3>& colors);
     void setUVs(const std::vector<vec2>& uvs);
 };

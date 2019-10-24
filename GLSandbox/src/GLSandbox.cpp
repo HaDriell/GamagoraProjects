@@ -9,14 +9,23 @@ int main()
 {
     //Scoped main, because Window has to be deleted
     {
-        std::shared_ptr<Window> window = std::make_shared<Window>();
-        //Compile Shader        
+        WindowSettings settings;
+        settings.width = 800;
+        settings.height = 800;
+        std::shared_ptr<Window> window = std::make_shared<Window>(settings);
+        //Compile Shader
+
+        ShaderSources sources;
+        // if (!loadGLSLFile("res/example.glsl", sources)) return 1;
+        if (!loadGLSLFile("res/phong.glsl", sources)) return 1;
+
         Shader shader = Shader();
-        shader.compileFile("res/example.glsl");
+        shader.compile(sources);
+        // shader.debug();
 
         //Load Mesh
         Mesh mesh = Mesh();
-        loadOBJFile("res/cube.obj", mesh);
+        // loadOBJFile("res/cube.obj", mesh);
         loadOBJFile("res/bunny.obj", mesh);
 
         Timer age;
@@ -27,25 +36,22 @@ int main()
             //Poll & Swap Buffers
             window->update();
             Render::Debug();
-            float dt = age.elapsed();
+            float deltaTime = age.elapsed();
 
             //Begin scene draw
             Render::Clear();
 
-            //Setup Shader 
             shader.bind();
             transform t;
-            t.set_translation(std::sin(dt) * 0.3f, 0, 0);
-            t.set_rotation(dt * 15, dt * 5, dt * 10);
-            shader.setUniform("model", t.get_matrix());
+            // t.set_translation(std::sin(dt) * 0.3f, 0, 0);
+            t.set_scaling(3, 3, 3);
+            t.set_rotation(0, 60 * deltaTime, 0);
+            shader.setUniform("ModelMatrix", t.get_matrix());
 
             //Render objects
             Render::DrawIndexed(mesh.getVertexArray(), mesh.getIndexBuffer());
-
-            //Setup another Shader...
-                //Render other objects...
-
-            //End scene draw
         }
     }
+    std::cout << "Press Enter to Exit" << std::endl;
+    std::cin.get();
 }

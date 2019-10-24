@@ -1,37 +1,54 @@
 //////////////////////////////////////////
 //Vertex Shader
-#version 450 core
+#version 330 core
 
+struct Vertex {
+    vec4 position;
+    vec4 normal;
+    vec4 color;
+    vec2 uv;
+};
+
+//Constants
+uniform mat4 model;
+
+//Vertex Layout
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec4 color;
 layout (location = 3) in vec2 uv;
 
-uniform mat4 model;
+//Interface
+out Vertex vertex;
 
 void main()
 {
-    gl_Position = model * vec4(position, 1.0);
-    gl_Normal;
+    vertex.position = model * vec4(position, 1.0);
+    vertex.normal   = model * vec4(normal, 0.0);
+    vertex.color    = color;
+    vertex.uv       = uv;
+
+    gl_Position = vertex.position;
 }
 
 
 //////////////////////////////////////////
 //Fragment Shader
-#version 450 core
+#version 330 core
 
-out vec4 color;
-
-
-in struct Vertex {
-    vec3 position;
-    vec3 normal;
+struct Vertex {
+    vec4 position;
+    vec4 normal;
     vec4 color;
     vec2 uv;
-} vertex;
+};
+
+out vec4 PixelColor;
+
+
+in Vertex vertex;
 
 void main()
 {
-    color = vertex.color;
-    color = normalize(color);
+    PixelColor = vertex.color;
 }
