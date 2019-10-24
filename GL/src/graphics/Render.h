@@ -19,5 +19,5 @@ public:
     static void ClearColor(const vec4& color);
     static void Clear();
 
-    static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<IndexBuffer>& indexBuffer);
+    static void DrawIndexed(const VertexArray& vertexArray, const IndexBuffer&  indexBuffer);
 };

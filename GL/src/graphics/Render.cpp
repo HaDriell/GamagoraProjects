@@ -34,9 +34,9 @@ void Render::Clear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Render::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<IndexBuffer>& indexBuffer)
+void Render::DrawIndexed(const VertexArray& vertexArray, const IndexBuffer& indexBuffer)
 {
-    vertexArray->bind();
-    indexBuffer->bind();
-    glDrawElements(GL_TRIANGLES, indexBuffer->getCount(), indexBuffer->getFormat(), nullptr);
+    vertexArray.bind();
+    indexBuffer.bind();
+    glDrawElements(GL_TRIANGLES, indexBuffer.getCount(), indexBuffer.getFormat(), nullptr);
 }

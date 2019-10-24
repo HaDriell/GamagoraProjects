@@ -114,6 +114,6 @@ public:
     void defineData(const std::vector<unsigned short> elements);
     void defineData(const std::vector<unsigned int> elements);
 
-    unsigned int getCount() { return count; }
-    unsigned int getFormat() { return format; }
+    unsigned int getCount() const { return count; }
+    unsigned int getFormat() const { return format; }
 };

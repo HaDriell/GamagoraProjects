@@ -79,15 +79,15 @@ mat4 mat4::inverse()
     );
 }
 
-mat4 mat4::Orthographic(float left, float right, float bottom, float top, float near, float far)
+mat4 mat4::Orthographic(float left, float right, float top, float bottom, float near, float far)
 {
-    float x = right - left;
-    float y = top - bottom;
-    float z = near - far;
+    float x =  2.f / (right - left);
+    float y =  2.f / (top - bottom);
+    float z = -2.f / (near - far);
 
-	float tx = (left + right) / (left - right);
-	float ty = (bottom + top) / (bottom - top);
-	float tz = (far + near) / (far - near);
+	float tx = -(right + left) / (right - left);
+	float ty = -(top + bottom) / (top - bottom);
+	float tz = -(far + near) / (far - near);
 
     return mat4(
          x,  0,  0,  0,

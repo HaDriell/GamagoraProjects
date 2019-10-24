@@ -22,7 +22,7 @@ struct mat4
     float determinant();
     mat4 inverse();
 
-    static mat4 Orthographic(float left, float right, float bottom, float top, float near, float far);
+    static mat4 Orthographic(float left, float right, float top, float bottom, float near, float far);
     static mat4 Perspective(float fov, float aspectRatio, float near, float far);
     static mat4 LookAt(const vec3& position, const vec3& target, const vec3& up);
 

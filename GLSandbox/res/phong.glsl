@@ -46,18 +46,18 @@ in vec2 vs_uv;
 //Output
 out vec4 fs_color;
 
+//Parameters
+uniform vec3    light_position;
+uniform float   light_intensity;
+uniform vec3    light_color;
 
 void main()
 {
-    // //Simulate a single point light
-    // vec3 light_position = vec3(0.0, 1.0, 0.0);
-    // float light_intensity = 1;
+    fs_color = vec4(0);
 
-    // //Compute angle between light & surface
-    // vec3 htl = normalize(light_position - vs_position);
-    // float diffuse = clamp(dot(htl, vs_normal), 0, 1);
-
-    // vec3 diffuseColor = vs_color * diffuse;
-
-    fs_color = vec4(vs_normal, 1.0);
+    //Diffuse Lighting
+    vec3 htl = normalize(light_position - vs_position);
+    float angle = clamp(dot(htl, vs_normal), 0, 1);
+    vec3 diffuseColor = vs_color * (light_color * angle * light_intensity);
+    fs_color += vec4(diffuseColor, 1);
 }
