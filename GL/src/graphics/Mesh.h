@@ -9,7 +9,6 @@
 #include "Buffer.h"
 #include "VertexArray.h"
 
-
 class Mesh
 {
 private:
@@ -29,12 +28,10 @@ public:
     const std::shared_ptr<VertexArray> getVertexArray() const { return vertexArray; }
     const std::shared_ptr<IndexBuffer> getIndexBuffer() const { return indices; }
 
-    void loadFromOBJ(const std::string& path);
-
     void setIndices(const std::vector<unsigned int>& indices);
     void setIndices(const std::vector<unsigned short>& indices);
     void setPositions(const std::vector<vec3>& positions);
     void setNormals(const std::vector<vec3>& normals);
-    void setColors(const std::vector<vec3>& colors);
+    void setColors(const std::vector<vec4>& colors);
     void setUVs(const std::vector<vec2>& uvs);
 };

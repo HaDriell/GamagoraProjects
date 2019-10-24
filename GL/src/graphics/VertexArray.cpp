@@ -1,7 +1,6 @@
 #include "VertexArray.h"
 
 #include <glad/glad.h>
-#include <iostream>
 
 static GLenum toOpenGLType(VertexAttributeType type)
 {
@@ -51,15 +50,6 @@ void VertexArray::addVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuf
     const BufferLayout& layout = vertexBuffer->getLayout();
     for (const VertexAttribute& attribute : layout)
     {
-        std::cout
-        << "VertexAttribute(" << vertexAttributePointer 
-        << ", name = " << attribute.name
-        << ", components = " << attribute.getComponentCount() 
-        << ", normalized = " << attribute.normalized
-        << ", stride = " << layout.getStride()
-        << ", offset = " << attribute.offset
-        << ")" << std::endl;
-
         //Enable & Setup Vertex Attribute
         glEnableVertexAttribArray(vertexAttributePointer);
         glVertexAttribPointer(vertexAttributePointer,

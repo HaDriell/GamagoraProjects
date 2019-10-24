@@ -24,7 +24,7 @@ void Shader::compileFile(const std::string& path)
     std::ifstream file(path);
     if (!file.is_open())
     {
-        std::cout << "Failed to compile Shader : File '" << path << "' not found !" << std::endl;
+        std::cout << "Failed to compile Shader program : File '" << path << "' not found !" << std::endl;
         return;
     }
     //parse file
