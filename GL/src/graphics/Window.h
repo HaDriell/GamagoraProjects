@@ -42,6 +42,8 @@ public:
     unsigned int getHeight() const;
 
     EventSystem& events();
+    void setVSync(bool enabled);
+    void setTitle(const std::string& title);
     void show();
     void hide();
     void close();

@@ -14,8 +14,8 @@ out vec3 vs_color;
 out vec2 vs_uv;
 
 //Parameters
-uniform mat4 ProjectionMatrix   = mat4(1);
-uniform mat4 ModelMatrix        = mat4(1);
+uniform mat4 u_ProjectionMatrix = mat4(1);
+uniform mat4 u_ModelMatrix      = mat4(1);
 
 
 void main()
@@ -24,7 +24,7 @@ void main()
     vs_color    = vertex_color;
     vs_uv       = vertex_uv;
 
-    gl_Position = ProjectionMatrix * ModelMatrix * vec4(vertex_position, 1.0f);
+    gl_Position = u_ProjectionMatrix * u_ModelMatrix * vec4(vertex_position, 1.0f);
 }
 
 
@@ -42,9 +42,10 @@ in vec2 vs_uv;
 out vec4 fs_color;
 
 //Parameters
-//TODO : support Textures
+uniform sampler2D u_Texture;
 
 void main()
 {
-    fs_color = vec4(vs_color, 1);
+    vec4 texture_color = texture(u_Texture, vs_uv);
+    fs_color = vec4(vs_color, 1) * texture_color;
 }

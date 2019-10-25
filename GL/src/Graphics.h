@@ -13,6 +13,7 @@
 
 //Texture related
 #include "graphics/Texture.h"
+#include "graphics/loaders/Images.h"
 
 //Mesh related
 #include "graphics/Mesh.h"

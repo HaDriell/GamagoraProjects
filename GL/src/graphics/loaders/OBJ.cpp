@@ -147,26 +147,6 @@ bool loadOBJFile(const std::string& filename, Mesh& mesh)
             indices.push_back(index++);
             indices.push_back(index++);
             indices.push_back(index++);
-            
-            // if (vertex.position) indices.push_back(index++);
-            // if (vertex.position) colors.push_back(vec3(1));
-            // if (vertex.position) positions.push_back(obj_positions[vertex.position - 1]);
-            // if (vertex.normal)   normals.push_back(obj_normals[vertex.normal - 1]);
-            // if (vertex.uv)       uvs.push_back(obj_uvs[vertex.uv - 1]);
- 
-            // vertex = vertices[fan - 1];
-            // if (vertex.position) indices.push_back(index++);
-            // if (vertex.position) colors.push_back(vec3(1));
-            // if (vertex.position) positions.push_back(obj_positions[vertex.position - 1]);
-            // if (vertex.normal)   normals.push_back(obj_normals[vertex.normal - 1]);
-            // if (vertex.uv)       uvs.push_back(obj_uvs[vertex.uv - 1]);
-
-            // vertex = vertices[fan - 0];
-            // if (vertex.position) indices.push_back(index++);
-            // if (vertex.position) colors.push_back(vec3(1));
-            // if (vertex.position) positions.push_back(obj_positions[vertex.position - 1]);
-            // if (vertex.normal)   normals.push_back(obj_normals[vertex.normal - 1]);
-            // if (vertex.uv)       uvs.push_back(obj_uvs[vertex.uv - 1]);
 
             //Increment to the next index
             fan++;

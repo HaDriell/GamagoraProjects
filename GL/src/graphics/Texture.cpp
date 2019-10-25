@@ -4,113 +4,136 @@
 #include <FreeImage.h>
 #include <iostream>
 
+GLenum toOpenGLTextureFilter(TextureFilter filter)
+{
+    switch (filter)
+    {
+        case TextureFilter::NEAREST:                return GL_NEAREST;
+        case TextureFilter::NEAREST_MIPMAP_LINEAR:  return GL_NEAREST_MIPMAP_LINEAR;
+        case TextureFilter::NEAREST_MIPMAP_NEAREST: return GL_NEAREST_MIPMAP_NEAREST;
+        case TextureFilter::LINEAR:                 return GL_LINEAR;
+        case TextureFilter::LINEAR_MIPMAP_LINEAR:   return GL_LINEAR_MIPMAP_LINEAR;
+        case TextureFilter::LINEAR_MIPMAP_NEAREST:  return GL_LINEAR_MIPMAP_NEAREST;
+    }
+    return GL_FALSE;
+}
 
-Texture::Texture() : handle(0) {}
+GLenum toOpenGLTextureWrap(TextureWrap wrap)
+{
+    switch (wrap)
+    {
+        case TextureWrap::CLAMP_TO_BORDER:  return GL_CLAMP_TO_BORDER;
+        case TextureWrap::CLAMP_TO_EDGE:    return GL_CLAMP_TO_EDGE;
+        case TextureWrap::REPEAT:           return GL_REPEAT;
+        case TextureWrap::MIRRORED_REPEAT:  return GL_MIRRORED_REPEAT;
+    }
+    return GL_FALSE;
+}
+
+GLenum toOpenGLTextureFormat(TextureFormat format)
+{
+    switch (format)
+    {
+        case TextureFormat::RGB:    return GL_RGB;
+        case TextureFormat::RGBA:   return GL_RGBA;
+    }
+    return GL_FALSE;
+}
+
+
+
+
+
+
+
+Image::Image(unsigned int width, unsigned int height) : width(width), height(height), buffer(nullptr)
+{
+    buffer = new unsigned char[4 * width * height];
+}
+
+Image::~Image()
+{
+    delete[] buffer;
+}
+
+void Image::read(unsigned int width, unsigned int height, unsigned char* buffer)
+{
+    //Deallocate old buffer
+    delete[] this->buffer;
+    //Update settigns
+    this->width     = width;
+    this->height    = height;
+
+    //Allocate buffer
+    this->buffer = new unsigned char[4 * width * height];
+    //Copy buffer
+    for (int i = 0; i < 4 * width * height; i++)
+    {
+        this->buffer[i] = buffer[i];
+    }
+}
+
+unsigned int Image::getWidth() const
+{
+    return width;
+}
+
+unsigned int Image::getHeight() const
+{
+    return height;
+}
+
+const unsigned char* Image::data() const 
+{
+    return buffer; 
+}
+
+
+
+
+
+
+
+
+
+Texture::Texture() : handle(0)
+{
+    glGenTextures(1, &handle);
+}
 
 Texture::~Texture()
 {
-    destroy();
+    glDeleteTextures(1, &handle);
 }
 
-TextureSettings Texture::getSettings()
+void Texture::defineSettings(const TextureSettings& settings)
 {
-    return settings;
-}
-
-void Texture::setSettings(const TextureSettings& settings)
-{
-    this->settings = settings;
-    //Update OpenGL if Texture exists
-    if (handle)
-    {
-        glBindTexture(GL_TEXTURE_2D, handle);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, settings.filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, settings.filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, settings.wrap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, settings.wrap);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-}
-
-void Texture::destroy()
-{
-    if (handle)
-    {
-        glDeleteTextures(1, &handle);
-        handle = 0;
-    }
-}
-
-void Texture::loadFile(const std::string& path)
-{
-    FreeImage_Initialise(); // Spam initialization... what else can I do ?
-
-    if (!handle)
-    {
-        glGenTextures(1, &handle);
-    }
-
-    FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
-    FIBITMAP* bitmap = nullptr;
-
-    //Find the FIF of the file
-    fif = FreeImage_GetFileType(path.c_str());
-    if (fif == FIF_UNKNOWN)
-        fif = FreeImage_GetFIFFromFilename(path.c_str());
-    if (fif == FIF_UNKNOWN)
-    {
-        std::cout << "Texture loading failed : unsupported format" << std::endl;
-        return;
-    }
-
-    if (!FreeImage_FIFSupportsReading(fif))
-    {
-        std::cout << "Texture loading failed : unreadable format" << std::endl;
-        return;
-    }
-
-    bitmap = FreeImage_Load(fif, path.c_str());
-    
-    if (!bitmap)
-    {
-        std::cout << "Texture loading failed : failed to load bitmap" << std::endl;
-        return;
-    }
-
-    //Apparently FreeImage loads from bottom to top ?
-    FreeImage_FlipVertical(bitmap);
-
-    BYTE* pixels = FreeImage_GetBits(bitmap);
-    width  = FreeImage_GetWidth(bitmap);
-    height = FreeImage_GetHeight(bitmap);
-
-    //Update the pixel format
-    unsigned int bpp = FreeImage_GetBPP(bitmap);
-    switch (bpp)
-    {
-        case 24:
-            settings.format = TextureFormat::RGB;
-        break;
-
-        case 32:
-            settings.format = TextureFormat::RGBA;        
-        break;
-        
-        default:
-            std::cout << "Unsupported BPP Format : " << bpp << std::endl;
-            return;
-    }
-
-    //Upload image data
     glBindTexture(GL_TEXTURE_2D, handle);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, settings.filter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, settings.filter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, settings.wrap);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, settings.wrap);
-    glTexImage2D(GL_TEXTURE_2D, 0, settings.format, width, height, 0, settings.format, GL_UNSIGNED_BYTE, pixels);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toOpenGLTextureFilter(settings.filter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, toOpenGLTextureFilter(settings.filter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toOpenGLTextureWrap(settings.wrap));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, toOpenGLTextureWrap(settings.wrap));
+    if (settings.mipmap)
+    {
+        //TODO : check how mipmap is actually handled, this might be totally wrong here
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+}
+void Texture::defineImage(const Image& image)
+{
+    uploadData(image.data(), image.getWidth(), image.getHeight(), TextureFormat::RGBA);
+}
 
-    FreeImage_Unload(bitmap);
+void Texture::defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
+{
+    uploadData(buffer, width, height, format);
+}
+
+void Texture::uploadData(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
+{
+    GLenum pixelFormat = toOpenGLTextureFormat(format);
+    glBindTexture(GL_TEXTURE_2D, handle);
+    glTexImage2D(GL_TEXTURE_2D, 0, pixelFormat, width, height, 0, pixelFormat, GL_UNSIGNED_BYTE, buffer);
 }
 
 void Texture::bind(unsigned int slot) const

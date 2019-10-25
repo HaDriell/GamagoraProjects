@@ -8,6 +8,8 @@
 #include "../Shader.h"
 #include "../Buffer.h"
 #include "../VertexArray.h"
+#include "../Texture.h"
+
 #include "Renderable2D.h"
 
 class Renderer2D
@@ -34,6 +36,7 @@ public:
     void pop();
 
     void fillRect(float x, float y, float width, float height, const vec3& color = vec3(1));
+    void drawImage(float x, float y, float width, float height, const Texture& texture, const vec3& color = vec3(1));
 
     void draw(const Renderable2D& renderable);
 };

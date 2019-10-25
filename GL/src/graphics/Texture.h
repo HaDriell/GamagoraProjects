@@ -1,25 +1,48 @@
 #pragma once
 
 #include <string>
-#include <glad/glad.h>
+
+struct Image
+{
+private:
+    unsigned char* buffer;
+    unsigned int width;
+    unsigned int height;
+
+public:
+    Image(unsigned int width = 1, unsigned int height = 1);
+    ~Image();
+
+    void read(unsigned int width, unsigned int height, unsigned char* buffer);
+
+    unsigned int getWidth() const;
+    unsigned int getHeight() const;    
+    const unsigned char* data() const;
+};
+
 
 enum TextureWrap
 {
-    REPEAT          = GL_REPEAT,
-    MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
-    CLAMP_TO_EDGE   = GL_CLAMP_TO_EDGE
+    REPEAT,
+    MIRRORED_REPEAT,
+    CLAMP_TO_EDGE,
+    CLAMP_TO_BORDER,
 };
 
 enum TextureFilter
 {
-    LINEAR  = GL_LINEAR,
-    NEAREST = GL_NEAREST
+    NEAREST,
+    NEAREST_MIPMAP_LINEAR,
+    NEAREST_MIPMAP_NEAREST,
+    LINEAR,
+    LINEAR_MIPMAP_LINEAR,
+    LINEAR_MIPMAP_NEAREST,
 };
 
 enum TextureFormat
 {
-    RGB     = GL_RGB,
-    RGBA    = GL_RGBA
+    RGB,
+    RGBA,
 };
 
 struct TextureSettings
@@ -27,25 +50,27 @@ struct TextureSettings
     TextureWrap     wrap    = TextureWrap::REPEAT;
     TextureFilter   filter  = TextureFilter::LINEAR;
     TextureFormat   format  = TextureFormat::RGBA;
+    bool            mipmap  = false;
 };
 
 class Texture
 {
 private:
     unsigned int        handle;
+    //Dimensions
     unsigned int        width;
     unsigned int        height;
-    TextureSettings     settings;
+
+
+    void uploadData(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);
 
 public:
     Texture();
     ~Texture();
 
-    void destroy();
-    void loadFile(const std::string& path);
-
-    TextureSettings getSettings();
-    void setSettings(const TextureSettings& settings);
+    void defineSettings(const TextureSettings& settings);
+    void defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);
+    void defineImage(const Image& image);
     
     void bind(unsigned int slot = 0) const;
     void unbind(unsigned int slot = 0) const;

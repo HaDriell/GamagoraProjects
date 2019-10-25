@@ -103,9 +103,61 @@ void Renderer2D::fillRect(float x, float y, float width, float height, const vec
 
     //Draw Call
     shader->bind();
-    shader->setUniform("ProjectionMatrix", projectionMatrix);
+    shader->setUniform("u_ProjectionMatrix", projectionMatrix);
     Render::DrawIndexed(*vertexArray, *indexBuffer);
 }
+
+void Renderer2D::drawImage(float x, float y, float width, float height, const Texture& texture, const vec3& color)
+{
+    mat4 transform = transformationStack.back();
+
+    std::vector<R2DVertex> vertices;
+    R2DVertex vertex;
+
+    vertex.position = transform * vec3(x, y, 0);
+    vertex.color    = color;
+    vertex.uv       = vec2(0, 0);
+    vertices.push_back(vertex);
+
+    vertex.position = transform * vec3(x + width, y, 0);
+    vertex.color    = color;
+    vertex.uv       = vec2(1, 0);
+    vertices.push_back(vertex);
+
+    vertex.position = transform * vec3(x + width, y + height, 0);
+    vertex.color    = color;
+    vertex.uv       = vec2(1, 1);
+    vertices.push_back(vertex);
+
+    vertex.position = transform * vec3(x, y + height, 0);
+    vertex.color    = color;
+    vertex.uv       = vec2(0, 1);
+    vertices.push_back(vertex);
+
+    //Quad indices
+    std::vector<unsigned int> indices;
+    //T1
+    indices.push_back(0);
+    indices.push_back(1);
+    indices.push_back(2);
+    //T2
+    indices.push_back(2);
+    indices.push_back(3);
+    indices.push_back(0);
+
+    //Upload Data
+    vertexBuffer->defineData(vertices);
+    indexBuffer->defineData(indices);
+
+    //Draw Call
+    texture.bind();
+    shader->bind();
+    shader->setUniform("u_ProjectionMatrix", projectionMatrix);
+    shader->setUniform("u_Texture", 0);
+    Render::DrawIndexed(*vertexArray, *indexBuffer);
+}
+
+
 
 void Renderer2D::draw(const Renderable2D& renderable)
 {

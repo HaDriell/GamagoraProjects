@@ -231,6 +231,16 @@ EventSystem& Window::events()
     return eventSystem;
 }
 
+void Window::setVSync(bool enabled)
+{
+    glfwSwapInterval(enabled);
+}
+
+
+void Window::setTitle(const std::string& title)
+{
+    glfwSetWindowTitle(handle, title.c_str());
+}
 
 void Window::show()
 {
