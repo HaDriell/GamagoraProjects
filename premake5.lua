@@ -267,6 +267,7 @@ workspace "TP"
             "AI/src",
             "Math/src",
             "GL/src",
+            "Util/src",
             "Glad/include"
         }
         libdirs {
@@ -276,6 +277,7 @@ workspace "TP"
             "AI",
             "Math",
             "GL",
+            "Util",
             "Glad",
             "glfw3",
             "freeimage"

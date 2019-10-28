@@ -25,6 +25,9 @@
 //Global Assertion
 #define ASSERT_EQ(a, b) ASSERT_TRUE((a) == (b))
 
+//Global Assertion
+#define ASSERT_NEQ(a, b) ASSERT_TRUE((a) != (b))
+
 //Assertion for Floating point values
 #define ASSERT_EQ_F(a, b) ASSERT_TRUE((std::abs((a) - (b)) < ASSERT_ESPILON))
 
