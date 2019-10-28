@@ -58,7 +58,7 @@ void VertexArray::addVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuf
                 attribute.normalized,
                 layout.getStride(),
                 (const void*) attribute.offset);
-#if 1
+#if 0
         std::cout 
         << "VertexAttribute " << attribute.name << " "
         << "Layout " <<  vertexAttributePointer << " "

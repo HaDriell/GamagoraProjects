@@ -37,6 +37,7 @@ int main()
             shader.compile(sources);
             if (!shader.isValid())  
                 shader.debug();
+            shader.debug();
 
             //Load Mesh from file
             // loadOBJFile("res/cube.obj", mesh);

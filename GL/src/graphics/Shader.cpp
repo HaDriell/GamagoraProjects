@@ -20,6 +20,36 @@ std::string getShaderTypeString(GLenum shaderType)
     return "Unknown";
 }
 
+std::string getGLSLTypeString(GLenum glslType)
+{
+    switch (glslType)
+    {
+        case GL_FLOAT:              return "Float";
+        case GL_FLOAT_VEC2:         return "Float2";
+        case GL_FLOAT_VEC3:         return "Float3";
+        case GL_FLOAT_VEC4:         return "Float4";
+        case GL_INT:                return "Int";
+        case GL_INT_VEC2:           return "Int2";
+        case GL_INT_VEC3:           return "Int3";
+        case GL_INT_VEC4:           return "Int4";
+        case GL_UNSIGNED_INT:       return "UInt";
+        case GL_UNSIGNED_INT_VEC2:  return "UInt2";
+        case GL_UNSIGNED_INT_VEC3:  return "UInt3";
+        case GL_UNSIGNED_INT_VEC4:  return "UInt4";
+        case GL_FLOAT_MAT3:         return "Mat3";
+        case GL_FLOAT_MAT4:         return "Mat4";
+        case GL_SAMPLER_2D:         return "Texture";
+    }
+    return "Unknown";
+}
+
+std::ostream& operator<<(std::ostream& stream, const ShaderUniform& uniform)
+{
+    stream << "Uniform(" << std::to_string(uniform.index) << ") " << getGLSLTypeString(uniform.type) << " " << uniform.name;
+    return stream;
+}
+
+
 Shader::Shader() : handle(0) 
 {
     handle = glCreateProgram();
@@ -34,35 +64,57 @@ void Shader::debug() const
 {
     std::cout << "Shader debug" << std::endl;
 
-    if (!isLinked())
+    if (isCompiled())
     {
-        std::cout << "Program isn't linked" << std::endl;
-        bool linkFailed = true;
+        std::cout << "Program is compiled" << std::endl;
+    }
+    
+    if (isCompiled() && isLinked())
+    {
+        std::cout << "Program is linked" << std::endl;
+    }
+
+    if (isCompiled() && isLinked() && isValid())
+    {
+        std::cout << "Program is valid" << std::endl;
+    }
+
+    //Check for compilation errors
+    if (!isCompiled())
+    {
+        std::cout << "Program is NOT compiled" << std::endl;
         for (auto& entry : compilationStatus)
         {
             const std::string& shaderName   = entry.first;
-            bool compiled                   = compilationStatus.at(shaderName);
             const std::string& info_log     = compilationLog.at(shaderName);
-            //Log errors
-            std::cout << shaderName << " Shader (" << (entry.second ? " OK " : "FAIL") << ")"
-            << " : " << (info_log.empty() ? "No logs " : info_log) << std::endl;
-            //Check for actual linking error
-            if (linkFailed) linkFailed = compiled;
-        }
-
-        if (linkFailed)
-        {
-            std::cout << "Linking Failed : " << linkingLog << std::endl;
+            std::cout << shaderName << " Shader [" << (entry.second ? "OKAY" : "FAIL") << "]"<< std::endl;
+            std::cout << (info_log.empty() ? "None" : info_log) << std::endl;
         }
     }
 
-    if (!isValid())
+    //Check for linking errors (only if compilation succeeded)    
+    if (isCompiled() && !isLinked())
     {
-        std::cout << "Program isn't valid" << std::endl;
-        std::cout << "Program Linking Log    : " << linkingLog << std::endl;
-        std::cout << "Program Validation Log : " << validationLog << std::endl;
+        std::cout << "Program is NOT linked" << std::endl;
+        std::cout << "Linking logs    : " << (linkingLog.empty() ? "None" : linkingLog) << std::endl;
     }
 
+    if (isCompiled() && isLinked() && !isValid())
+    {
+        std::cout << "Program is NOT valid" << std::endl;
+        std::cout << "Validation logs : " << (validationLog.empty() ? "None" : validationLog) << std::endl;
+    }
+
+    if (isCompiled() && isLinked() && isValid())
+    {
+        std::cout << "Shader Uniforms" << std::endl;
+        for (auto& entry : shaderUniforms)
+        {
+            std::cout << entry.second << std::endl;
+        }
+    }
+
+    std::cout << "Press Enter to exit Shader debug" << std::endl;
     std::cin.get();
 }
 
@@ -71,8 +123,10 @@ bool Shader::compile(const ShaderSources& shaderSources)
     //Clear metadata
     compilationLog.clear();
     compilationStatus.clear();
-    linked = false;
-    valid = false;
+    shaderUniforms.clear();
+    compiled = false;
+    linked   = false;
+    valid    = false;
 
     //Compile each shader
     std::vector<unsigned int> shaders;
@@ -106,18 +160,18 @@ bool Shader::compile(const ShaderSources& shaderSources)
     }
 
     //Check for successful shader compilations
-    bool canLinkProgram = true;
+    compiled = true;
     for (auto& shaderCompilation : compilationStatus)
     {
         if (!shaderCompilation.second)
         {
-            canLinkProgram = false;
+            compiled = false;
             break;
         }
     }
 
-    //Proceed to linking only when shaders compiled
-    if (canLinkProgram)
+    //Linking phase
+    if (compiled)
     {
         //Attach shaders to program
         for (unsigned int shader : shaders)
@@ -140,27 +194,53 @@ bool Shader::compile(const ShaderSources& shaderSources)
             linked      = isLinked == GL_TRUE;
         }
 
-        if (linked)
-        {
-            glValidateProgram(handle);
-            //Fetch validation info
-            {
-                GLint isValid = GL_FALSE;
-                glGetProgramiv(handle, GL_VALIDATE_STATUS, &isValid);
-                GLint maxLength = 0;
-                glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &maxLength);
-                std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
-                glGetProgramInfoLog(handle, maxLength, &maxLength, &info_log[0]);
-
-                validationLog   = std::string(info_log.begin(), info_log.end());
-                valid           = isValid == GL_TRUE;
-            }
-        }
-
         //Detatch shaders from program
         for (unsigned int shader : shaders)
         {
             glDetachShader(handle, shader);
+        }
+    }
+
+    //Validation phase
+    if (linked)
+    {
+        //Validate program
+        glValidateProgram(handle);
+        //Fetch validation info
+        {
+            GLint isValid = GL_FALSE;
+            glGetProgramiv(handle, GL_VALIDATE_STATUS, &isValid);
+            GLint maxLength = 0;
+            glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> info_log = std::vector<GLchar>(maxLength);
+            glGetProgramInfoLog(handle, maxLength, &maxLength, &info_log[0]);
+
+            validationLog   = std::string(info_log.begin(), info_log.end());
+            valid           = isValid == GL_TRUE;
+        }
+    }
+
+    //Query for active uniforms
+    if (valid)
+    {
+        GLint uniformCount;
+        glGetProgramiv(handle, GL_ACTIVE_UNIFORMS, &uniformCount);
+
+        for (int index = 0; index < uniformCount; index++)
+        {
+            //Read active uniform data
+            GLchar  name[256];
+            GLsizei nameLength;
+            GLsizei size;
+            GLenum  type;
+            glGetActiveUniform(handle, index, sizeof(name), &nameLength, &size, &type, name);
+            //Store data into the ShaderUniforms
+            ShaderUniform shaderUniform;
+            shaderUniform.index = index;
+            shaderUniform.name  = std::string(name);
+            shaderUniform.size  = size;
+            shaderUniform.type  = type;
+            shaderUniforms[shaderUniform.name] = shaderUniform;
         }
     }
     

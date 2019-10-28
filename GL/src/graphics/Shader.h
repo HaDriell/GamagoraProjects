@@ -1,13 +1,26 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <map>
 
 #include "maths.h"
 
+//Data representing a uniform parameter in a Shader
+struct ShaderUniform
+{
+    std::string     name;
+    unsigned int    index;
+    unsigned int    size;
+    unsigned int    type;
+};
+std::ostream& operator<<(std::ostream& stream, const ShaderUniform& uniform);
+
+
 using ShaderSources = std::map<unsigned int, std::string>;
 using ShaderCompilationLogs = std::map<std::string, std::string>;
 using ShaderCompileStatuses = std::map<std::string, bool>;
+using ShaderUniforms = std::map<std::string, ShaderUniform>;
 
 class Shader
 {
@@ -17,6 +30,8 @@ private:
     //Useful metadata for development
     ShaderCompilationLogs   compilationLog;
     ShaderCompileStatuses   compilationStatus;
+    ShaderUniforms          shaderUniforms;
+    bool                    compiled;
     std::string             linkingLog;
     bool                    linked;
     std::string             validationLog;
@@ -30,16 +45,17 @@ public:
     bool compile(const ShaderSources& sources);
 
     //metadata Getters
+    bool isCompiled() const { return compiled; }
     bool isValid() const { return valid; }
     bool isLinked() const { return linked; }
     const ShaderCompilationLogs& getCompilationLog() const { return compilationLog; }
     const ShaderCompileStatuses& getCompilationStatus() const { return compilationStatus; }
+    const ShaderUniforms& getShaderUniforms() const { return shaderUniforms; }
     const std::string& getLinkingLog() const { return linkingLog; }
     const std::string& getValidationLog() const { return validationLog; }
 
-
     void bind() const;
-    void unbind() const;    
+    void unbind() const;
 
     void setUniform(const std::string& name, int value);
     void setUniform(const std::string& name, float value);
