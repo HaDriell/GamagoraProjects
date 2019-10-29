@@ -6,7 +6,7 @@
 
 #include "maths.h"
 
-//Data representing a uniform parameter in a Shader
+//Represents a single uniform in the program
 struct ShaderUniform
 {
     std::string     name;
@@ -16,11 +16,21 @@ struct ShaderUniform
 };
 std::ostream& operator<<(std::ostream& stream, const ShaderUniform& uniform);
 
+//Represents a single attribute in the vertex shader
+struct ShaderAttribute
+{
+    std::string     name;
+    unsigned int    index;
+    unsigned int    size;
+    unsigned int    type;
+};
+std::ostream& operator<<(std::ostream& stream, const ShaderAttribute& attribute);
 
-using ShaderSources = std::map<unsigned int, std::string>;
+using ShaderSources         = std::map<unsigned int, std::string>;
 using ShaderCompilationLogs = std::map<std::string, std::string>;
 using ShaderCompileStatuses = std::map<std::string, bool>;
-using ShaderUniforms = std::map<std::string, ShaderUniform>;
+using ShaderUniforms        = std::map<std::string, ShaderUniform>;
+using ShaderAttributes      = std::map<std::string, ShaderAttribute>;
 
 class Shader
 {
@@ -31,6 +41,7 @@ private:
     ShaderCompilationLogs   compilationLog;
     ShaderCompileStatuses   compilationStatus;
     ShaderUniforms          shaderUniforms;
+    ShaderAttributes        shaderAttributes;
     bool                    compiled;
     std::string             linkingLog;
     bool                    linked;

@@ -49,6 +49,11 @@ std::ostream& operator<<(std::ostream& stream, const ShaderUniform& uniform)
     return stream;
 }
 
+std::ostream& operator<<(std::ostream& stream, const ShaderAttribute& attribute)
+{
+    stream << "Attribute(" << std::to_string(attribute.index) << ") " << getGLSLTypeString(attribute.type) << " " << attribute.name;
+    return stream;    
+}
 
 Shader::Shader() : handle(0) 
 {
@@ -110,7 +115,13 @@ void Shader::debug() const
         std::cout << "Shader Uniforms" << std::endl;
         for (auto& entry : shaderUniforms)
         {
-            std::cout << entry.second << std::endl;
+            std::cout << '\t' << entry.second << std::endl;
+        }
+
+        std::cout << "Shader Attributes" << std::endl;
+        for (auto& entry : shaderAttributes)
+        {
+            std::cout << '\t' << entry.second << std::endl;
         }
     }
 
@@ -124,6 +135,7 @@ bool Shader::compile(const ShaderSources& shaderSources)
     compilationLog.clear();
     compilationStatus.clear();
     shaderUniforms.clear();
+    shaderAttributes.clear();
     compiled = false;
     linked   = false;
     valid    = false;
@@ -223,9 +235,9 @@ bool Shader::compile(const ShaderSources& shaderSources)
     //Query for active uniforms
     if (valid)
     {
+        //Fetch Uniforms
         GLint uniformCount;
         glGetProgramiv(handle, GL_ACTIVE_UNIFORMS, &uniformCount);
-
         for (int index = 0; index < uniformCount; index++)
         {
             //Read active uniform data
@@ -241,6 +253,26 @@ bool Shader::compile(const ShaderSources& shaderSources)
             shaderUniform.size  = size;
             shaderUniform.type  = type;
             shaderUniforms[shaderUniform.name] = shaderUniform;
+        }
+
+        //Fetch Attributes
+        GLint attributeCount;
+        glGetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+        for (int index = 0; index < attributeCount; index++)
+        {
+            //Read active attribute data
+            GLchar  name[256];
+            GLsizei nameLength;
+            GLsizei size;
+            GLenum  type;
+            glGetActiveAttrib(handle, index, sizeof(name), &nameLength, &size, &type, name);
+            //Store data into the ShaderUniforms
+            ShaderAttribute shaderAttribute;
+            shaderAttribute.index = index;
+            shaderAttribute.name  = std::string(name);
+            shaderAttribute.size  = size;
+            shaderAttribute.type  = type;
+            shaderAttributes[shaderAttribute.name] = shaderAttribute;
         }
     }
     
