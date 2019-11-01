@@ -1,6 +1,5 @@
 #include "Shader.h"
 
-#include <iostream>
 #include <fstream>
 #include <vector>
 
@@ -127,6 +126,37 @@ void Shader::debug() const
 
     std::cout << "Press Enter to exit Shader debug" << std::endl;
     std::cin.get();
+}
+
+bool Shader::compile(const std::string& filename)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        LogError("Failed to open file '{0}'. Not found ?", filename);
+        return false;
+    }
+
+    ShaderSources sources;
+    unsigned int shaderSection = GL_FALSE;
+    std::string line;
+
+    //Read line by line
+    while (std::getline(file, line))
+    {
+        //Special comment handling (consume them and update the shader section)
+        if (line.rfind("//TesselationControl Shader", 0) == 0)      { shaderSection = GL_TESS_CONTROL_SHADER    ; continue; }
+        if (line.rfind("//TesselationEvaluation Shader", 0) == 0)   { shaderSection = GL_TESS_EVALUATION_SHADER ; continue; }
+        if (line.rfind("//Geometry Shader", 0) == 0)                { shaderSection = GL_GEOMETRY_SHADER        ; continue; }
+        if (line.rfind("//Vertex Shader", 0) == 0)                  { shaderSection = GL_VERTEX_SHADER          ; continue; }
+        if (line.rfind("//Fragment Shader", 0) == 0)                { shaderSection = GL_FRAGMENT_SHADER        ; continue; }
+        if (line.rfind("//Compute Shader", 0) == 0)                 { shaderSection = GL_COMPUTE_SHADER         ; continue; }
+
+        //Not a Section declaration Comment
+        if (shaderSection != GL_FALSE)
+            sources[shaderSection] += line + "\n";
+    }
+    return compile(sources);
 }
 
 bool Shader::compile(const ShaderSources& shaderSources)

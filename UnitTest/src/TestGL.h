@@ -18,7 +18,7 @@ void test_gl()
 {
     Window w = Window();
     Shader s;
-    Texture t;
+    Texture2D t;
     // Mesh m;
 
     w.events().add<KeyPressedEvent>([&](const KeyPressedEvent& event)

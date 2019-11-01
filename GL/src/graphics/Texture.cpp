@@ -8,12 +8,12 @@ GLenum toOpenGLTextureFilter(TextureFilter filter)
 {
     switch (filter)
     {
-        case TextureFilter::NEAREST:                return GL_NEAREST;
-        case TextureFilter::NEAREST_MIPMAP_LINEAR:  return GL_NEAREST_MIPMAP_LINEAR;
-        case TextureFilter::NEAREST_MIPMAP_NEAREST: return GL_NEAREST_MIPMAP_NEAREST;
-        case TextureFilter::LINEAR:                 return GL_LINEAR;
-        case TextureFilter::LINEAR_MIPMAP_LINEAR:   return GL_LINEAR_MIPMAP_LINEAR;
-        case TextureFilter::LINEAR_MIPMAP_NEAREST:  return GL_LINEAR_MIPMAP_NEAREST;
+        case TextureFilter::Nearest:                return GL_NEAREST;
+        case TextureFilter::NearestMipmapLinear:    return GL_NEAREST_MIPMAP_LINEAR;
+        case TextureFilter::NearestMipmapNearest:   return GL_NEAREST_MIPMAP_NEAREST;
+        case TextureFilter::Linear:                 return GL_LINEAR;
+        case TextureFilter::LinearMipmapLinear:     return GL_LINEAR_MIPMAP_LINEAR;
+        case TextureFilter::LinearMipmapNearest:    return GL_LINEAR_MIPMAP_NEAREST;
     }
     return GL_FALSE;
 }
@@ -22,10 +22,10 @@ GLenum toOpenGLTextureWrap(TextureWrap wrap)
 {
     switch (wrap)
     {
-        case TextureWrap::CLAMP_TO_BORDER:  return GL_CLAMP_TO_BORDER;
-        case TextureWrap::CLAMP_TO_EDGE:    return GL_CLAMP_TO_EDGE;
-        case TextureWrap::REPEAT:           return GL_REPEAT;
-        case TextureWrap::MIRRORED_REPEAT:  return GL_MIRRORED_REPEAT;
+        case TextureWrap::ClampToBorder:    return GL_CLAMP_TO_BORDER;
+        case TextureWrap::ClampToEdge:      return GL_CLAMP_TO_EDGE;
+        case TextureWrap::Repeat:           return GL_REPEAT;
+        case TextureWrap::MirroredRepeat:   return GL_MIRRORED_REPEAT;
     }
     return GL_FALSE;
 }
@@ -96,17 +96,17 @@ const unsigned char* Image::data() const
 
 
 
-Texture::Texture() : handle(0)
+Texture2D::Texture2D() : handle(0)
 {
     glGenTextures(1, &handle);
 }
 
-Texture::~Texture()
+Texture2D::~Texture2D()
 {
     glDeleteTextures(1, &handle);
 }
 
-void Texture::defineSettings(const TextureSettings& settings)
+void Texture2D::defineSettings(const TextureSettings& settings)
 {
     glBindTexture(GL_TEXTURE_2D, handle);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toOpenGLTextureFilter(settings.filter));
@@ -119,30 +119,30 @@ void Texture::defineSettings(const TextureSettings& settings)
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 }
-void Texture::defineImage(const Image& image)
+void Texture2D::defineImage(const Image& image)
 {
     uploadData(image.data(), image.getWidth(), image.getHeight(), TextureFormat::RGBA);
 }
 
-void Texture::defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
+void Texture2D::defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
 {
     uploadData(buffer, width, height, format);
 }
 
-void Texture::uploadData(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
+void Texture2D::uploadData(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)
 {
     GLenum pixelFormat = toOpenGLTextureFormat(format);
     glBindTexture(GL_TEXTURE_2D, handle);
     glTexImage2D(GL_TEXTURE_2D, 0, pixelFormat, width, height, 0, pixelFormat, GL_UNSIGNED_BYTE, buffer);
 }
 
-void Texture::bind(unsigned int slot) const
+void Texture2D::bind(unsigned int slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, handle);
 }
 
-void Texture::unbind(unsigned int slot) const
+void Texture2D::unbind(unsigned int slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, 0);

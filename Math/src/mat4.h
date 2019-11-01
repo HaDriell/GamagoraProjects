@@ -34,6 +34,7 @@ struct mat4
     static mat4 RotationY(float degrees);
     static mat4 RotationZ(float degrees);
     static mat4 Scale(float x, float y, float z);
+    static mat4 Scale(float scalar);
 };
 
 vec2 operator*(const mat4& left, const vec2& right);

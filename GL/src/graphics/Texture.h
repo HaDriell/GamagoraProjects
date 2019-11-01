@@ -23,20 +23,20 @@ public:
 
 enum TextureWrap
 {
-    REPEAT,
-    MIRRORED_REPEAT,
-    CLAMP_TO_EDGE,
-    CLAMP_TO_BORDER,
+    Repeat,
+    MirroredRepeat,
+    ClampToEdge,
+    ClampToBorder,
 };
 
 enum TextureFilter
 {
-    NEAREST,
-    NEAREST_MIPMAP_LINEAR,
-    NEAREST_MIPMAP_NEAREST,
-    LINEAR,
-    LINEAR_MIPMAP_LINEAR,
-    LINEAR_MIPMAP_NEAREST,
+    Nearest,
+    NearestMipmapLinear,
+    NearestMipmapNearest,
+    Linear,
+    LinearMipmapLinear,
+    LinearMipmapNearest,
 };
 
 enum TextureFormat
@@ -47,13 +47,13 @@ enum TextureFormat
 
 struct TextureSettings
 {
-    TextureWrap     wrap    = TextureWrap::REPEAT;
-    TextureFilter   filter  = TextureFilter::LINEAR;
+    TextureWrap     wrap    = TextureWrap::Repeat;
+    TextureFilter   filter  = TextureFilter::Linear;
     TextureFormat   format  = TextureFormat::RGBA;
     bool            mipmap  = false;
 };
 
-class Texture
+class Texture2D
 {
 private:
     unsigned int        handle;
@@ -65,8 +65,8 @@ private:
     void uploadData(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);
 
 public:
-    Texture();
-    ~Texture();
+    Texture2D();
+    ~Texture2D();
 
     void defineSettings(const TextureSettings& settings);
     void defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);

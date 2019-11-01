@@ -1,10 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <map>
-
-#include "maths.h"
+#include "../Common.h"
 
 //Represents a single uniform in the program
 struct ShaderUniform
@@ -26,11 +22,11 @@ struct ShaderAttribute
 };
 std::ostream& operator<<(std::ostream& stream, const ShaderAttribute& attribute);
 
-using ShaderSources         = std::map<unsigned int, std::string>;
-using ShaderCompilationLogs = std::map<std::string, std::string>;
-using ShaderCompileStatuses = std::map<std::string, bool>;
-using ShaderUniforms        = std::map<std::string, ShaderUniform>;
-using ShaderAttributes      = std::map<std::string, ShaderAttribute>;
+using ShaderSources         = std::unordered_map<unsigned int, std::string>;
+using ShaderCompilationLogs = std::unordered_map<std::string, std::string>;
+using ShaderCompileStatuses = std::unordered_map<std::string, bool>;
+using ShaderUniforms        = std::unordered_map<std::string, ShaderUniform>;
+using ShaderAttributes      = std::unordered_map<std::string, ShaderAttribute>;
 
 class Shader
 {
@@ -53,6 +49,7 @@ public:
     ~Shader();
 
     void debug() const;
+    bool compile(const std::string& filename);
     bool compile(const ShaderSources& sources);
 
     //metadata Getters

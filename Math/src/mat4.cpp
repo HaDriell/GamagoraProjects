@@ -148,6 +148,11 @@ mat4 mat4::Scale(float x, float y, float z)
         0, 0, 0, 1);
 }
 
+mat4 mat4::Scale(float scalar)
+{
+    return mat4::Scale(scalar, scalar, scalar);
+}
+
 mat4 mat4::Rotation(float degrees, const vec3& axis)
 {
     float rad = degrees * deg2rad;

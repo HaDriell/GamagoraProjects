@@ -23,26 +23,22 @@ bool VFS::Exists(const std::string& physicalPath)
 
 bool VFS::Resolve(const std::string& virtualPath, std::string& physicalPath)
 {
-    //Empty path. Unresolvable.
+    //Empty path. Always fail.
     if (virtualPath.empty()) 
         return false;
 
     if (virtualPath[0] == '/')
     {
         unsigned long position = 0;
-        while (position < virtualPath.length())
+        //While finding positions in virtualPath (always will be less than npos)
+        while ((position = virtualPath.find('/', position)) < virtualPath.length())
         {
-            //Find the next separator
-            position = virtualPath.find('/', position);
-            //Stop resolving if no more separators are found
-            if (position == std::string::npos)
-                continue;
-            //Extract the Mounting point (smaller mounting points are evaluated first)
-            std::string mountingPoint = virtualPath.substr(0, position);
+            std::string prefix = virtualPath.substr(0, position);
             //Check for existence in mounted paths
-            auto vpath = paths.find(mountingPoint);
+            auto vpath = paths.find(prefix);
             if (vpath != paths.end())
             {
+                //Assemble an actual path & test if exists
                 std::string candidatePath = vpath->second + "/" + virtualPath.substr(position + 1);
                 if (VFS::Exists(candidatePath))
                 {
@@ -50,6 +46,7 @@ bool VFS::Resolve(const std::string& virtualPath, std::string& physicalPath)
                     return true;
                 }
             }
+            //Advance once to find the next separator
             position++;
         }
     }

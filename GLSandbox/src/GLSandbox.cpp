@@ -1,114 +1,149 @@
 #include <iostream>
-#include <vector>
 
 #include <random>
 
-#include "Timer.h"
-#include "Events.h"
-#include "Graphics.h"
+#include <Common.h>
+#include <System.h>
+#include <Graphics.h>
+
+struct Renderer2DLayer : public Layer
+{
+    Renderer2D renderer;
+    Ref<Shader> shader;
+
+    unsigned int hSubdivisions = 400;
+    unsigned int vSubdivisions = 225;
+
+    std::default_random_engine random;
+
+    Renderer2DLayer() : Layer("Renderer2D Layer") {}
+
+    void onLoad()
+    {
+        shader = std::make_shared<Shader>();
+        if (!shader->compile("res/shaders/Renderer2DShader.glsl"))
+            shader->debug();
+    }
+
+    void onRender(float deltaTime)
+    {
+        float width = getWindow()->getWidth();
+        float height = getWindow()->getHeight();
+
+        std::uniform_real_distribution<float> Float(0.0f, 1.0f);
+
+        renderer.begin(shader, mat4::Orthographic(0, width, 0, height, 1, -1));
+
+        float hSize = width / (float) hSubdivisions;
+        float vSize = height / (float) vSubdivisions;
+        for (int i = 0; i < hSubdivisions; i++)
+        {
+            float x = i * hSize;
+            for (int j = 0; j < vSubdivisions; j++)
+            {
+                float y = j * vSize;
+
+                //Draw quad
+                vec3 color;
+                color.x = Float(random);
+                color.y = Float(random);
+                color.z = Float(random);
+                renderer.fillRect(x, y, hSize, vSize, color);
+            }
+        }
+        renderer.end();
+    }
+
+    void onUnload() {}
+};
+
+struct MeshLayer : public Layer
+{
+    RenderPipeline pipeline;
+    Ref<Shader> shader;
+    Ref<Mesh> mesh;
+
+    std::string shaderFilename;
+    std::string meshFilename;
+    mat4 ModelMatrix;
+    float rotationSpeed = 60;
+    float rotation;
+
+    MeshLayer(const std::string& shaderFilename, const std::string& meshFilename, const mat4& modelMatrix) 
+    : shaderFilename(shaderFilename), meshFilename(meshFilename), ModelMatrix(modelMatrix)
+    {
+    }
+
+    void onLoad()
+    {
+        shader = Assets<Shader>::Get()->find(shaderFilename);
+        if (!shader)
+        {
+            shader = std::make_shared<Shader>();
+            shader->compile(shaderFilename);
+            Assets<Shader>::Get()->add(shaderFilename, shader);
+        }
+
+        mesh = Assets<Mesh>::Get()->find(meshFilename);
+        if (!mesh)
+        {
+            mesh = std::make_shared<Mesh>();
+            mesh->loadOBJ(meshFilename);
+            Assets<Mesh>::Get()->add(meshFilename, mesh);
+        }
+
+        pipeline.depthTesting = true;
+        pipeline.blending = true;
+        pipeline.blendingMode = BlendingMode::Add;
+        pipeline.srcBlending = BlendingFactor::SrcAlpha;
+        pipeline.dstBlending = BlendingFactor::OneMinusSrcAlpha;
+    }
+
+    void onRender(float deltaTime)
+    {
+        rotation += deltaTime;
+        shader->bind();
+        shader->setUniform("u_ModelMatrix", mat4::RotationY(rotationSpeed * rotation) * ModelMatrix);
+        Render::ConfigurePipeline(pipeline);
+        Render::DrawIndexed(*mesh->getVertexArray(), *mesh->getIndexBuffer());  
+    }
+};
 
 int main()
 {
-    std::default_random_engine random;
-    std::uniform_real_distribution<float> Float(0, 1);
+    WindowSettings settings;
+    settings.glMajorVersion = 4;
+    settings.glMinorVersion = 5;
+    settings.resizeable     = false;
 
-    //Scoped main, because Window has to be deleted
+    //Create the Window
+    Ref<Window> window = std::make_shared<Window>(settings);
+    // window->setVSync(false);
+    window->pushLayer(new FPSLayer(2));
+    // window->pushLayer(new Renderer2DLayer());
+    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(-0.5f, 0, 0)));
+    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(+0.5f, 0, 0)));
+
+    for (float y = -1; y <= 1; y += 0.2f)
     {
-        WindowSettings settings;
-        settings.width = 800;
-        settings.height = 800;
-        std::shared_ptr<Window> window = std::make_shared<Window>(settings);
-        window->setVSync(false);
-
-        //High level rendering example
-        Renderer2D renderer(settings.width, settings.height);
-
-        //Low level rendering example
-        Shader  shader;
-        Mesh    mesh;
-        Texture texture;
-
-        //Initialize Shader & Mesh
+        for (float x = -1; x <= 1; x += 0.2f)
         {
-            //Compile Shader from file
-            ShaderSources sources;
-            // if (!loadGLSLFile("res/example.glsl", sources)) return 1;
-            if (!loadGLSLFile("res/phong.glsl", sources)) return 1;
-            shader.compile(sources);
-            if (!shader.isValid())  
-                shader.debug();
-            shader.debug();
-
-            //Load Mesh from file
-            // loadOBJFile("res/cube.obj", mesh);
-            loadOBJFile("res/bunny.obj", mesh);
-
-            //Load Texture from file
-            TextureSettings textureSettings;
-            Image image;
-            loadImageFile("res/metal.png", image);
-            texture.defineImage(image);
-            texture.defineSettings(textureSettings);
-        }
-
-
-        Timer age;
-        Timer frameTimer;
-        Render::Init();
-        Render::ClearColor(vec4(0, 0, 0, 1));
-        while (!window->shouldClose())
-        {
-            //Window management & screen clean-up
-            window->update();
-            Render::Debug();
-            Render::Clear();
-
-            //Low Level render loop
-            {
-                shader.bind();
-                shader.setUniform("ModelMatrix", mat4::Scale(3, 3, 3) * mat4::RotationY(60 * age.elapsed()));
-                shader.setUniform("light_position", vec3(0.0f, 1.0f, 0.0f));
-                shader.setUniform("light_intensity", 1.0f);
-                shader.setUniform("light_color", vec3(1.0f));
-                Render::DrawIndexed(*mesh.getVertexArray(), *mesh.getIndexBuffer());
-            }
-
-            //High level Rendering Example
-            {
-                renderer.push(mat4::RotationZ(60 * age.elapsed()));
-                renderer.push(mat4::Translation(100, 50, 0));
-                renderer.fillRect(0, 0, 300, 100);
-                renderer.drawImage(0, 0, 100, 300, texture);
-                renderer.pop();
-                renderer.pop();
-            }
-
-            //Make the Renderer kneel
-            {
-                random.seed(1);
-                int count = 10;
-                float quadWidth = window->getWidth() / (float) count;
-                float quadHeight = window->getHeight() / (float) count;
-
-                for (int dx = 0; dx < count; dx++)
-                {
-                    for (int dy = 0; dy < count; dy++)
-                    {
-                        vec3 color = vec3(Float(random), Float(random), Float(random));
-                        renderer.fillRect(dx * quadWidth, dy * quadHeight, quadWidth, quadHeight, color);
-                    }
-                }
-
-                renderer.pop();
-                renderer.pop();
-            }
-
-            //Update timer
-            int fps = (int) (1.f / frameTimer.elapsed());
-            frameTimer.reset();
-            window->setTitle("GL Window " + std::to_string(fps) + " FPS");
+            MeshLayer* layer = new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(x, y, 0) * mat4::Scale(0.6f));
+            layer->rotation += x + y * 2;
+            window->pushLayer(layer);
         }
     }
+
+    //MainLoop
+    while (!window->shouldClose())
+    {
+        Render::Debug();
+        window->update();
+        Render::Clear();
+        window->render();
+    }
+    window.reset(); // deletes the Window
+
     std::cout << "Press Enter to Exit" << std::endl;
     std::cin.get();
 }

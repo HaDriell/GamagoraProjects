@@ -1,45 +1,55 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <string>
+#include "../Common.h"
 
-#include "../Events.h"
+#include "EventSystem.h"
+#include "Layer.h"
+
 
 struct WindowSettings
 {
-    std::string title  = "GL Window";
+    std::string title  = "Window";
     int glMajorVersion = 4; 
     int glMinorVersion = 5;
     int width          = 800;
     int height         = 450;
     bool decorated     = true;
+    bool resizeable    = true;
+    bool vsync         = true;
 };
+
+
+//opaque window pointer
+struct GLFWwindow;
 
 class Window
 {
-public:
-    //Reference counter to track when GLFW should init & terminate
-    static int windowCount;
-
 private:
+    GLFWwindow* handle;
     std::string title;
     unsigned int width;
     unsigned int height;
-    GLFWwindow* handle;
+
     EventSystem eventSystem;
+    std::vector<Layer*> layers;
+
+    Timer renderTimer;
     
 public:
     Window(const WindowSettings& settings = WindowSettings());
     ~Window();
 
-
     void update();
+    void render();
+    void pushLayer(Layer* layer);
+    void popLayer();
+
 
     bool shouldClose() const;
     std::string getTitle() const;
     unsigned int getWidth() const;
     unsigned int getHeight() const;
+
 
     EventSystem& events();
     void setVSync(bool enabled);
@@ -48,6 +58,11 @@ public:
     void hide();
     void close();
     bool isVisible() const;
+
+public:
+    //////////////////////////
+    //Static GLFW3 callbacks//
+    //////////////////////////
 
     //Window Events
     friend void OnWindowMoved(GLFWwindow* window, int x, int y);

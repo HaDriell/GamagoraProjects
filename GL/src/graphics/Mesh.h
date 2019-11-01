@@ -1,39 +1,50 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
 
-#include "maths.h"
+#include "../Common.h"
 
 #include "Buffer.h"
 #include "VertexArray.h"
 
 
-const BufferLayout MESH_POSITION_LAYOUT = {{ VertexAttributeType::Float3, "vertex_position" }};
-const BufferLayout MESH_NORMAL_LAYOUT   = {{ VertexAttributeType::Float3, "vertex_normal" }};
-const BufferLayout MESH_COLOR_LAYOUT    = {{ VertexAttributeType::Float3, "vertex_color" }};
-const BufferLayout MESH_UV_LAYOUT       = {{ VertexAttributeType::Float2, "vertex_uv" }};
+struct MeshVertex
+{
+    vec3 position;
+    vec3 normal;
+    vec3 color;
+    vec2 uv;
+};
+
+const BufferLayout MeshVertexLayout = {
+    { VertexAttributeType::Float3, "Position" },
+    { VertexAttributeType::Float3, "Normal"   },
+    { VertexAttributeType::Float3, "Color"    },
+    { VertexAttributeType::Float2, "UV"       },
+};
 
 class Mesh
 {
 private:
-    std::shared_ptr<VertexArray> vertexArray;
+    //OpenGL buffers
+    Ref<VertexArray>  vertexArray;
+    Ref<VertexBuffer> vertexBuffer;
+    Ref<IndexBuffer>  indexBuffer;
 
-    std::shared_ptr<VertexBuffer> positions;    //location 0
-    std::shared_ptr<VertexBuffer> normals;      //location 1
-    std::shared_ptr<VertexBuffer> colors;       //location 2
-    std::shared_ptr<VertexBuffer> uvs;          //location 3
-
-    std::shared_ptr<IndexBuffer> indices;
+    //Memory buffers
+    std::vector<MeshVertex> vertices;
+    std::vector<unsigned int> indices;
 
 public:
     Mesh();
     ~Mesh();
 
-    const std::shared_ptr<VertexArray> getVertexArray() const { return vertexArray; }
-    const std::shared_ptr<IndexBuffer> getIndexBuffer() const { return indices; }
+    const Ref<VertexArray> getVertexArray() const { return vertexArray; }
+    const Ref<IndexBuffer> getIndexBuffer() const { return indexBuffer; }
 
+    void loadOBJ(const std::string& path);
+
+    //Manual data updates
+    void setVertices(const std::vector<MeshVertex>& vertices);
     void setIndices(const std::vector<unsigned int>& indices);
     void setIndices(const std::vector<unsigned short>& indices);
     void setPositions(const std::vector<vec3>& positions);

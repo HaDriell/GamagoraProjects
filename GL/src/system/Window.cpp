@@ -1,13 +1,15 @@
 #include "Window.h"
+
 #include <iostream>
 #include <cstdlib>
+#include <atomic>
 
-#include "../Events.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <Log.h>
 
-void error_callback(int error, const char* description);
-
-//Start without initializing anything
-int Window::windowCount = 0;
+void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+void glfw_error_callback(int error, const char* description);
 
 void OnWindowMoved(GLFWwindow* window, int x, int y)
 {
@@ -121,31 +123,112 @@ void OnMouseScrolled(GLFWwindow* window, double xOffset, double yOffset)
 
 
 
+
+
+
+
+
+
+std::string toString_OpenGLSource(GLenum source)
+{
+    switch (source)
+    {
+        case GL_DEBUG_SOURCE_API:               return "API";
+        case GL_DEBUG_SOURCE_APPLICATION:       return "Application";
+        case GL_DEBUG_SOURCE_OTHER:             return "Other";
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:   return "Shader Compiler";
+        case GL_DEBUG_SOURCE_THIRD_PARTY:       return "Third Party";
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:     return "Window System";
+    }
+    return "Unknown";
+}
+
+std::string toString_OpenGLType(GLenum type)
+{
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "Deprecated";
+        case GL_DEBUG_TYPE_ERROR:               return "Error";
+        case GL_DEBUG_TYPE_MARKER:              return "Marker";
+        case GL_DEBUG_TYPE_OTHER:               return "Other";
+        case GL_DEBUG_TYPE_PERFORMANCE:         return "Performance";
+        case GL_DEBUG_TYPE_POP_GROUP:           return "Pop Group";
+        case GL_DEBUG_TYPE_PORTABILITY:         return "Portability";
+        case GL_DEBUG_TYPE_PUSH_GROUP:          return "Push Group";
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  return "Undefined Behavior";
+    }
+    return "Unknown";
+}
+
+std::string toString_OpenGLSeverity(GLenum type)
+{
+    switch (type)
+    {
+        case GL_DEBUG_SEVERITY_NOTIFICATION:    return "Notification";
+        case GL_DEBUG_SEVERITY_LOW:             return "Low";
+        case GL_DEBUG_SEVERITY_MEDIUM:          return "Medium";
+        case GL_DEBUG_SEVERITY_HIGH:            return "High";
+    }
+    return "Unknown";
+}
+
+void opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    LogDebug("[{0}~{1}] ({2}) [{3}] : {4}",
+        toString_OpenGLSource(source),
+        toString_OpenGLType(type),
+        id,
+        toString_OpenGLSeverity(severity),
+        std::string_view(message, length)
+    );
+}
+
+void glfw_error_callback(int error, const char* description)
+{
+    std::string message(description);
+    LogError("GLFW Error({0}): {1}", error, message);
+}
+
+
+
+
+
+
+
+
+
+//Window atomic counter
+std::atomic_int __Windows = 0;
+
 Window::Window(const WindowSettings& settings)
 {
-    if (windowCount == 0)
+    int count = __Windows++;
+
+    //Initialization required. First Window to be created
+    if (count == 0)
     {
         if (!glfwInit())
         {
-            std::cout << "Failed to initialize GLFW !" << std::endl;
+            LogError("Failed to initialize GLFW3 !");
         } else {
-            glfwSetErrorCallback(error_callback);
+            LogTrace("Binding Logger to the GLFW3 error callback");
+            glfwSetErrorCallback(glfw_error_callback);
         }
+        LogInfo("Initialized GLFW");
     }
-    windowCount++;
 
     this->width = settings.width;
     this->height = settings.height;
     this->title = settings.title;
 
     glfwDefaultWindowHints();
-
     //OpenGL Context setup
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, settings.glMajorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, settings.glMinorVersion);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     glfwWindowHint(GLFW_DECORATED, settings.decorated ? GLFW_TRUE : GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, settings.resizeable ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //enforce invisible creation and to delegate late initialization
 
     //Create the Window & Load OpenGL function pointers
@@ -153,13 +236,26 @@ Window::Window(const WindowSettings& settings)
 
     if (!handle)
     {
-        std::cout << "Failed to open a GLFW Window" << std::endl;
+        LogError("Failed to open Window.");
     }
 
     //Load the OpenGL Context using glad and glfw
     glfwMakeContextCurrent(handle);
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
     glfwSetWindowUserPointer(handle, this);
+
+    //Setup the GL Debug callback
+    glDebugMessageCallback(opengl_message_callback, nullptr);
+
+    //Show the OpenGL Context Info
+    LogInfo("OpenGL Context Info\n"
+        "\tVendor   : {0}\n"
+        "\tRenderer : {1}\n"
+        "\tVersion  : {2}\n",
+        glGetString(GL_VENDOR),
+        glGetString(GL_RENDERER),
+        glGetString(GL_VERSION)
+    );
 
     //Position the window
     int mxOffset;
@@ -185,25 +281,65 @@ Window::Window(const WindowSettings& settings)
     glfwSetScrollCallback(handle,      OnMouseScrolled);
 
     //Initialization finished, show the Window
+    setVSync(settings.vsync);
     show();
 }
 
 Window::~Window()
 {
+    for (auto layer = layers.rbegin(); layer != layers.rend(); layer++)
+    {
+        (*layer)->setWindow(nullptr); // trigger on unload
+    }
+    layers.clear();
+
     glfwDestroyWindow(handle);
 
+    int count = __Windows--;
 
-    windowCount--;
-    if (windowCount == 0)
+    //Last Window closing ! we can safely terminate the Window
+    if (count == 1)
     {
         glfwTerminate();
+        LogInfo("Terminated GLFW");
     }
 }
 
 void Window::update()
 {
-    glfwPollEvents(); // will consume events and call the callbacks
+    //Update GLFW3 Window
+    glfwPollEvents();
     glfwSwapBuffers(handle);
+}
+
+void Window::render()
+{
+    //Refresh Update timer
+    float deltaTime = renderTimer.elapsed();
+    renderTimer.reset();
+
+    //Render Layers
+    for (auto layer = layers.begin(); layer != layers.end(); layer++)
+    {
+        (*layer)->onRender(deltaTime); // trigger on unload
+    }
+}
+
+void Window::pushLayer(Layer* layer)
+{
+    if (layer)
+    {
+        LogTrace("Pushing Layer '{0}'", layer->getName());
+        layers.push_back(layer);
+        layer->setWindow(this);
+    }
+}
+
+void Window::popLayer()
+{
+    Layer* back = layers.back();
+    layers.pop_back();
+    back->setWindow(nullptr);
 }
 
 bool Window::shouldClose() const
@@ -236,7 +372,6 @@ void Window::setVSync(bool enabled)
     glfwSwapInterval(enabled);
 }
 
-
 void Window::setTitle(const std::string& title)
 {
     glfwSetWindowTitle(handle, title.c_str());
@@ -260,11 +395,4 @@ void Window::close()
 bool Window::isVisible() const
 {
     return glfwGetWindowAttrib(handle, GLFW_VISIBLE) == GLFW_TRUE;
-}
-
-
-void error_callback(int error, const char* description)
-{
-    std::string errorString(description);
-    std::cout << "GLFW Error(" << error << ") : " << errorString << std::endl;
 }
