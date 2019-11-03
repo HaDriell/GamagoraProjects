@@ -12,7 +12,6 @@ void test_math()
 {
     test_vec2();
     test_vec3();
-    // test_transform(); // tehcnically works fine. But EPSILON is too small for float shitty precision
     test_aabb_intersection();
 }
 
@@ -57,38 +56,6 @@ void test_vec3()
     ASSERT_EQ(a - 10, vec3(-9, -10, -10));
     ASSERT_EQ(a * 10, vec3(10, 0, 0));
     ASSERT_EQ(a / 10, vec3(0.1f, 0, 0));
-}
-
-void test_transform()
-{
-    transform t;
-    vec3 a, b, c;
-
-    //apply & inverse test
-    t = transform();
-    t.translate(45, -410, 50);
-    t.rotate(-90, 40, 130);
-    t.scale(1, 3, 2);
-    a = vec3(-10, 0.5f, 49);
-    b = t.multiply(a);
-    c = t.multiplyInverse(b);
-    ASSERT_EQ(a, c);
-
-    //scaling test
-    t = transform();
-    t.scale(10, -10, 10);
-    a = vec3(1, 1, 1);
-    b = t.multiply(a);
-    c = vec3(10, -10, 10);
-    ASSERT_EQ(b, c);
-
-    //rotation Z test
-    t = transform();
-    t.rotate(0, 0, -90);
-    a = vec3(1, 0, 0);
-    b = t.multiply(a);
-    c = vec3(0, 1, 0);
-    ASSERT_EQ(b, c);
 }
 
 void test_aabb_intersection()

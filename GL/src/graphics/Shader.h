@@ -7,6 +7,7 @@ struct ShaderUniform
 {
     std::string     name;
     unsigned int    index;
+    unsigned int    location;
     unsigned int    size;
     unsigned int    type;
 };

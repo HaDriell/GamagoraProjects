@@ -279,6 +279,7 @@ bool Shader::compile(const ShaderSources& shaderSources)
             //Store data into the ShaderUniforms
             ShaderUniform shaderUniform;
             shaderUniform.index = index;
+            shaderUniform.location = glGetUniformLocation(handle, name);
             shaderUniform.name  = std::string(name);
             shaderUniform.size  = size;
             shaderUniform.type  = type;
@@ -327,37 +328,78 @@ void Shader::unbind() const
 
 void Shader::setUniform(const std::string& name, int value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+    
     glUniform1i(location, value);
 }
 
 void Shader::setUniform(const std::string& name, float value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+
     glUniform1f(location, value);
 }
 
 void Shader::setUniform(const std::string& name, const vec2& value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+
     glUniform2f(location, value.x, value.y);
 }
 
 void Shader::setUniform(const std::string& name, const vec3& value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+
     glUniform3f(location, value.x, value.y, value.z);
 }
 
 void Shader::setUniform(const std::string& name, const vec4& value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
     glUniform4f(location, value.x, value.y, value.z, value.w);
 }
 
 void Shader::setUniform(const std::string& name, const mat3& value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+
     float elements[] = {
         value.m00, value.m01, value.m02,
         value.m10, value.m11, value.m12,
@@ -368,7 +410,14 @@ void Shader::setUniform(const std::string& name, const mat3& value)
 
 void Shader::setUniform(const std::string& name, const mat4& value)
 {
-    unsigned int location = glGetUniformLocation(handle, name.c_str());
+    auto uniform = shaderUniforms.find(name);
+    if (uniform == shaderUniforms.end())
+    {
+        LogWarning("Uniform {0} doesn't exist or is inactive.", name);
+        return;
+    }
+    unsigned int location = uniform->second.location;
+
     float elements[] = {
         value.m00, value.m01, value.m02, value.m03,
         value.m10, value.m11, value.m12, value.m13,

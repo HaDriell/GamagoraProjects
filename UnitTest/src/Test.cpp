@@ -9,11 +9,15 @@
 int main()
 {
     std::cout << "Begining tests" << std::endl;
-    test_math();
-    test_vfs();
-    test_assets_api();
-    test_log();
 
+    std::cout << "Testing Math" << std::endl;
+    test_math();
+    std::cout << "Testing VFS" << std::endl;
+    test_vfs();
+    std::cout << "Testing Assets" << std::endl;
+    test_assets_api();
+    std::cout << "Testing Logs" << std::endl;
+    test_log();
     std::cout << "Ending tests" << std::endl;
     std::cin.get();
 }

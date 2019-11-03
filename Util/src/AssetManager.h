@@ -28,6 +28,9 @@ public:
 
     std::shared_ptr<T> find(const std::string& name)
     {
-        return assets[name];
+        auto it = assets.find(name);
+        if (it == assets.end())
+            return std::shared_ptr<T>(nullptr); // legal ?
+        return it->second;
     }
 };

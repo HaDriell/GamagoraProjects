@@ -110,7 +110,7 @@ mat4 mat4::Perspective(float fov, float aspectRatio, float near, float far)
         0, 0, c, 0);
 }
 
-mat4 mat4::Translation(vec3 v)
+mat4 mat4::Translation(const vec3& v)
 {
     return mat4::Translation(v.x, v.y, v.z);
 }
@@ -146,6 +146,11 @@ mat4 mat4::Scale(float x, float y, float z)
         0, y, 0, 0,
         0, 0, z, 0,
         0, 0, 0, 1);
+}
+
+mat4 mat4::Scale(const vec3& scale)
+{
+    return mat4::Scale(scale.x, scale.y, scale.z);
 }
 
 mat4 mat4::Scale(float scalar)

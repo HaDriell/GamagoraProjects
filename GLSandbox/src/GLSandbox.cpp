@@ -76,20 +76,20 @@ struct MeshLayer : public Layer
 
     void onLoad()
     {
-        shader = Assets<Shader>::Get()->find(shaderFilename);
+        shader = Assets<Shader>::Find(shaderFilename);
         if (!shader)
         {
-            shader = std::make_shared<Shader>();
+            shader = MakeRef<Shader>();
             shader->compile(shaderFilename);
-            Assets<Shader>::Get()->add(shaderFilename, shader);
+            Assets<Shader>::Add(shaderFilename, shader);
         }
 
-        mesh = Assets<Mesh>::Get()->find(meshFilename);
+        mesh = Assets<Mesh>::Find(meshFilename);
         if (!mesh)
         {
-            mesh = std::make_shared<Mesh>();
+            mesh = MakeRef<Mesh>();
             mesh->loadOBJ(meshFilename);
-            Assets<Mesh>::Get()->add(meshFilename, mesh);
+            Assets<Mesh>::Add(meshFilename, mesh);
         }
 
         pipeline.depthTesting = true;
@@ -124,16 +124,6 @@ int main()
     window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(-0.5f, 0, 0)));
     window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(+0.5f, 0, 0)));
 
-    for (float y = -1; y <= 1; y += 0.2f)
-    {
-        for (float x = -1; x <= 1; x += 0.2f)
-        {
-            MeshLayer* layer = new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(x, y, 0) * mat4::Scale(0.6f));
-            layer->rotation += x + y * 2;
-            window->pushLayer(layer);
-        }
-    }
-
     //MainLoop
     while (!window->shouldClose())
     {
@@ -144,6 +134,6 @@ int main()
     }
     window.reset(); // deletes the Window
 
-    std::cout << "Press Enter to Exit" << std::endl;
-    std::cin.get();
+    // std::cout << "Press Enter to Exit" << std::endl;
+    // std::cin.get();
 }

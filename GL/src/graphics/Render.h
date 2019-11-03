@@ -25,12 +25,12 @@ struct RenderPipeline
 {
     //Depth Testing
     bool            depthTesting    = false;
+    //Face culling (culls back face)
     bool            faceCulling     = false;
-
     //Blending Configuration
     bool            blending        = false;
-    BlendingFactor  srcBlending     = BlendingFactor::SrcAlpha;
-    BlendingFactor  dstBlending     = BlendingFactor::OneMinusSrcAlpha;
+    BlendingFactor  srcBlending     = BlendingFactor::One;
+    BlendingFactor  dstBlending     = BlendingFactor::Zero;
     BlendingMode    blendingMode    = BlendingMode::Add;
 };
 
