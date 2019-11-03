@@ -3,36 +3,41 @@
 #include "vec3.h"
 #include "mat4.h"
 
-class transform
+class Transform
 {
-    vec3 t = vec3();
-    vec3 r = vec3(0, 0, 0);
-    vec3 s = vec3(1, 1, 1);
-
-
-public:
-    transform();
-    
-    void set_translation(float x, float y, float z);
-    void set_rotation(float x, float y, float z);
-    void set_scaling(float x, float y, float z);
-
-    void translate(float x, float y, float z);
-    void rotate(float xDegrees, float yDegrees, float zDegrees);
-    void scale(float xScaling, float yScaling, float zScaling);
-
-    vec3 multiply(const vec3& v, bool point = true);
-    vec3 multiplyInverse(const vec3& v, bool point = true);
-
-    vec3 get_translation();
-    vec3 get_rotation();
-    vec3 get_scaling();
-
-    mat4 get_matrix();
-    mat4 get_matrix_inverse();
-
 private:
-    bool cached = false;
-    void computeMatrices();
-    mat4 matrix, matrixInverse;
+    vec3 m_Position;
+    vec3 m_Rotation;
+    vec3 m_Scale;
+
+    mat4 m_Matrix;
+    mat4 m_Inverse;
+
+    void compute();
+public:
+    Transform();
+
+    void setPosition(const vec3& position);
+    void setRotation(const vec3& rotation);
+    void setScale(const vec3& scale);
+    void translate(const vec3& translation);
+    void rotate(const vec3& angles);
+    void scale(const vec3& scales);
+
+    inline void setPosition(float x, float y, float z)                      { setPosition(vec3(x, y, z)); }
+    inline void setRotation(float xDegrees, float yDegrees, float zDegrees) { setRotation(vec3(xDegrees, yDegrees, zDegrees)); }
+    inline void setScale(float x, float y, float z)                         { setScale(vec3(x, y, z)); }
+    inline void translate(float x, float y, float z)                        { translate(vec3(x, y, z)); }
+    inline void rotate(float xDegrees, float yDegrees, float zDegrees)      { rotate(vec3(xDegrees, yDegrees, zDegrees)); }
+    inline void scale(float x, float y, float z)                            { scale(vec3(x, y, z)); }
+
+    vec3 multiply(const vec3& v, float w = 1) const;
+    vec3 multiplyInverse(const vec3& v, float w = 1) const;
+
+    vec3 getPosition() const;
+    vec3 getRotation() const;
+    vec3 getScale() const;
+
+    mat4 getMatrix() const;
+    mat4 getInverse() const;
 };

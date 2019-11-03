@@ -10,19 +10,18 @@ struct Instance;
 
 struct HitResult
 {
-    bool hit;
-    float distance;
-    vec3 hitPoint;
-    vec3 normal;
-    Instance* instance;
-
-    HitResult() : hit(false) {}
+    bool            hit             = false;
+    unsigned long   intersections   = 1;
+    float           distance;
+    vec3            hitPoint;
+    vec3            normal;
+    Instance*       instance;
 };
 
 
 struct Instance
 {
-    transform transform;
+    Transform transform;
     Material material;
 
     HitResult hit(const vec3& position, const vec3& direction);

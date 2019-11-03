@@ -8,13 +8,11 @@ SphereInstance::~SphereInstance() {}
 
 vec3 SphereInstance::get_centroid() const
 {
-    ::transform transform = this->transform;
     return transform.multiply(vec3());
 }
 
 AABB SphereInstance::get_bounding_box() const
 {
-    ::transform transform = this->transform;
     AABB box;
     box.min = vec3(-1);
     box.max = vec3(1);

@@ -4,8 +4,8 @@
 MeshInstance* createBlock(Scene& scene, float x, float y, float z, float gridSize)
 {
     MeshInstance* block = scene.createOBJMesh("cube.obj");
-    block->transform.set_scaling(gridSize, gridSize, gridSize);
-    block->transform.set_translation(x * gridSize, y * gridSize, z * gridSize);
+    block->transform.setScale(gridSize, gridSize, gridSize);
+    block->transform.setPosition(x * gridSize, y * gridSize, z * gridSize);
     block->material = Material::Diffuse(1, 0.15, 0.15, 0.15);
     return block;
 }
@@ -48,8 +48,8 @@ int main()
     mirror->material |= Material::Reflective(1);
 
     MeshInstance* object = scene.createMesh();
-    object->transform.set_translation(0, 0, 0);
-    object->transform.set_scaling(40, 40, 40);
+    object->transform.setPosition(0, 0, 0);
+    object->transform.setScale(40, 40, 40);
     object->material |= Material::Diffuse(0.9, 1, 1, 1);
     object->material |= Material::Reflective(0.1);
 

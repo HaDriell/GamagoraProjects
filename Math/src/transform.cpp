@@ -1,113 +1,88 @@
 #include "transform.h"
 
 
-transform::transform() : t(vec3()), r(vec3()), s(vec3(1, 1, 1)) 
-{}
-
-vec3 transform::get_translation()
+Transform::Transform() : m_Position(vec3()), m_Rotation(vec3()), m_Scale(vec3(1)), m_Matrix(mat4()), m_Inverse(mat4())
 {
-    return t;
 }
 
-vec3 transform::get_rotation()
+void Transform::setPosition(const vec3& position)
 {
-    return r;
+    m_Position = position;
+    compute();
 }
 
-vec3 transform::get_scaling()
+void Transform::setRotation(const vec3& rotation)
 {
-    return s;
+    m_Rotation = rotation;
+    compute();
 }
 
-
-
-void transform::set_translation(float x, float y, float z)
+void Transform::setScale(const vec3& scale)
 {
-    t.x = x;
-    t.y = y;
-    t.z = z;
-    cached = false;
+    m_Scale = scale;
+    compute();
 }
 
-void transform::set_rotation(float x, float y, float z)
+void Transform::translate(const vec3& translation)
 {
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    cached = false;
+    m_Position += translation;
+    compute();
 }
 
-void transform::set_scaling(float x, float y, float z)
+void Transform::rotate(const vec3& angles)
 {
-    s.x = x;
-    s.y = y;
-    s.z = z;
-    cached = false;
+    m_Rotation += angles;
+    compute();
 }
 
-void transform::translate(float x, float y, float z)
+void Transform::scale(const vec3& scales)
 {
-    t.x += x;
-    t.y += y;
-    t.z += z;
-    cached = false;
+    m_Scale *= scales;
+    compute();
 }
 
-void transform::rotate(float xDegrees, float yDegrees, float zDegrees)
-{
-    r.x += xDegrees;
-    r.y += yDegrees;
-    r.z += zDegrees;
-    cached = false;
+vec3 Transform::getPosition() const 
+{ 
+    return m_Position; 
 }
 
-void transform::scale(float xScaling, float yScaling, float zScaling)
+vec3 Transform::getRotation() const
 {
-    s.x = xScaling;
-    s.y = yScaling;
-    s.z = zScaling;
-    cached = false;
+    return m_Rotation;
 }
 
-mat4 transform::get_matrix()
+vec3 Transform::getScale() const
 {
-    computeMatrices();
-    return matrix;
+    return m_Scale;
 }
 
-mat4 transform::get_matrix_inverse()
+mat4 Transform::getMatrix() const
 {
-    computeMatrices();
-    return matrixInverse;
+    return m_Matrix;
+}
+
+mat4 Transform::getInverse() const
+{
+    return m_Inverse;
 }
 
 
-vec3 transform::multiply(const vec3& v, bool point)
+vec3 Transform::multiply(const vec3& v, float w) const
 {
-    vec4 t = get_matrix() * vec4(v.x, v.y, v.z, point ? 1 : 0);
+    vec4 t = m_Matrix * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 
-vec3 transform::multiplyInverse(const vec3& v, bool point)
+vec3 Transform::multiplyInverse(const vec3& v, float w) const
 {
-    vec4 t = get_matrix_inverse() * vec4(v.x, v.y, v.z, point ? 1 : 0);
+    vec4 t = m_Inverse * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 
-void transform::computeMatrices()
+void Transform::compute()
 {
-    //skip compute when cache is enabled
-    if (cached) return;
-
     //Compute Matrix
-    matrix = mat4::Scale(s.x, s.y, s.z) 
-           * mat4::RotationX(r.x)
-           * mat4::RotationY(r.y)
-           * mat4::RotationZ(r.z)
-           * mat4::Translation(t);
+    m_Matrix = mat4::Scale(m_Scale) * mat4::RotationYXZ(m_Rotation) * mat4::Translation(m_Position);
     //Compute Inverse
-    matrixInverse = matrix.inverse();
-
-    //enable cache
-    cached = true;
+    m_Inverse = m_Matrix.inverse();
 }

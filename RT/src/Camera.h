@@ -14,8 +14,6 @@ struct Camera
 
     Camera() : position(vec3()), rotation(vec3()), fov(60), framebuffer(Framebuffer(256, 256)) {}
 
-//    void lookAt(vec3 target, vec3 up = vec3::UP);
-
     float get_aspect_ratio();
     float get_focal_distance();
 };

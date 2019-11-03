@@ -33,14 +33,11 @@ HitResult MeshInstance::intersect(const vec3& position, const vec3& direction)
 
 vec3 MeshInstance::get_centroid() const
 {
-    ::transform transform = this->transform;
-    vec3 centroid = mesh.get_centroid();
-    return transform.multiply(centroid);
+    return transform.multiply(mesh.get_centroid());
 }
 
 AABB MeshInstance::get_bounding_box() const
 {
-    ::transform transform = this->transform;
     AABB lbox = mesh.get_bounding_box();
     
     std::vector<vec3> lbox_vertices;
