@@ -5,14 +5,28 @@
 
 #include <glad/glad.h>
 
+GLenum toOpenGLShaderType(unsigned int shaderType)
+{
+    switch (shaderType)
+    {
+        case ShaderType::Vertex:                return GL_VERTEX_SHADER;
+        case ShaderType::TesselationControl:    return GL_TESS_CONTROL_SHADER;
+        case ShaderType::TesselationEvaluation: return GL_TESS_EVALUATION_SHADER;
+        case ShaderType::Geometry:              return GL_GEOMETRY_SHADER;
+        case ShaderType::Fragment:              return GL_FRAGMENT_SHADER;
+        case ShaderType::Compute:               return GL_COMPUTE_SHADER;
+    }
+    return GL_FALSE;
+}
+
 std::string getShaderTypeString(GLenum shaderType)
 {
     switch (shaderType)
     {
+        case GL_VERTEX_SHADER:          return "Vertex";
         case GL_TESS_CONTROL_SHADER:    return "TesselationControl";
         case GL_TESS_EVALUATION_SHADER: return "TesselationEvaluation";
         case GL_GEOMETRY_SHADER:        return "Geometry";
-        case GL_VERTEX_SHADER:          return "Vertex";
         case GL_FRAGMENT_SHADER:        return "Fragment";
         case GL_COMPUTE_SHADER:         return "Compute";
     }
@@ -138,23 +152,23 @@ bool Shader::compile(const std::string& filename)
     }
 
     ShaderSources sources;
-    unsigned int shaderSection = GL_FALSE;
+    ShaderType shaderType = ShaderType::None;
     std::string line;
 
     //Read line by line
     while (std::getline(file, line))
     {
         //Special comment handling (consume them and update the shader section)
-        if (line.rfind("//TesselationControl Shader", 0) == 0)      { shaderSection = GL_TESS_CONTROL_SHADER    ; continue; }
-        if (line.rfind("//TesselationEvaluation Shader", 0) == 0)   { shaderSection = GL_TESS_EVALUATION_SHADER ; continue; }
-        if (line.rfind("//Geometry Shader", 0) == 0)                { shaderSection = GL_GEOMETRY_SHADER        ; continue; }
-        if (line.rfind("//Vertex Shader", 0) == 0)                  { shaderSection = GL_VERTEX_SHADER          ; continue; }
-        if (line.rfind("//Fragment Shader", 0) == 0)                { shaderSection = GL_FRAGMENT_SHADER        ; continue; }
-        if (line.rfind("//Compute Shader", 0) == 0)                 { shaderSection = GL_COMPUTE_SHADER         ; continue; }
+        if (line.rfind("//Vertex Shader", 0) == 0)                  { shaderType = ShaderType::Vertex               ; continue; }
+        if (line.rfind("//TesselationControl Shader", 0) == 0)      { shaderType = ShaderType::TesselationControl   ; continue; }
+        if (line.rfind("//TesselationEvaluation Shader", 0) == 0)   { shaderType = ShaderType::TesselationEvaluation; continue; }
+        if (line.rfind("//Geometry Shader", 0) == 0)                { shaderType = ShaderType::Geometry             ; continue; }
+        if (line.rfind("//Fragment Shader", 0) == 0)                { shaderType = ShaderType::Fragment             ; continue; }
+        if (line.rfind("//Compute Shader", 0) == 0)                 { shaderType = ShaderType::Compute              ; continue; }
 
         //Not a Section declaration Comment
-        if (shaderSection != GL_FALSE)
-            sources[shaderSection] += line + "\n";
+        if (shaderType != ShaderType::None)
+            sources[shaderType] += line + "\n";
     }
     return compile(sources);
 }
@@ -174,7 +188,7 @@ bool Shader::compile(const ShaderSources& shaderSources)
     std::vector<unsigned int> shaders;
     for (auto& shaderSource : shaderSources)
     {
-        unsigned int shaderType = shaderSource.first;
+        unsigned int shaderType = toOpenGLShaderType(shaderSource.first);
         const GLchar* source    = shaderSource.second.c_str();
 
         //Create Shader

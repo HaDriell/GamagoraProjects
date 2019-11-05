@@ -5,24 +5,10 @@
 #include "../Shader.h"
 #include "../Buffer.h"
 #include "../VertexArray.h"
-#include "../Render.h"
 
 #include "Renderable2D.h"
 
-
-const RenderPipeline Renderer2DPipeline = {
-    false, //Depth Testing
-    true,  //Blending
-};
-
-const BufferLayout Renderer2DVertexLayout = BufferLayout{
-    { VertexAttributeType::Float2, "Position"   },
-    { VertexAttributeType::Float3, "Color"      },
-    { VertexAttributeType::Float2, "UV"         },
-    { VertexAttributeType::Float,  "TextureID"  },
-};
-
-struct Renderer2DVertex
+struct Vertex2D
 {
     vec2    position;
     vec3    color;
@@ -30,9 +16,11 @@ struct Renderer2DVertex
     float   textureID;
 };
 
-
 class Renderer2D
 {
+public:
+    static Ref<Shader> LoadShader();
+
 private:
     //Low level Renderer data structure
     Ref<VertexArray>                vertexArray;
@@ -41,15 +29,16 @@ private:
     Ref<Shader>                     shader;
     //Batch data
     unsigned int                    batchSize;
+    unsigned int                    batchCapacity;
     std::vector<mat4>               transformationStack;
-    std::vector<Renderer2DVertex>   vertices;
+    std::vector<Vertex2D>           vertices;
     std::vector<unsigned int>       indices;
 public:
     Renderer2D();
 
     //TODO : use materials instead when available. They will secure that the Shader resources are kept alive
-    void begin(Ref<Shader> shader, const mat4& root = mat4(), unsigned int batchCapacity = 10000);
-    void end(bool restart = false);
+    void begin(const mat4& root = mat4(), unsigned int batchCapacity = 10000);
+    void end();
 
     void push(const mat4& matrix, bool absolute = false);
     void pop();

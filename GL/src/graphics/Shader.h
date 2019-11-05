@@ -2,6 +2,15 @@
 
 #include "../Common.h"
 
+enum ShaderType
+{
+    None = 0,
+    Vertex,
+    TesselationControl, TesselationEvaluation,
+    Geometry, Fragment,
+    Compute
+};
+
 //Represents a single uniform in the program
 struct ShaderUniform
 {
@@ -23,7 +32,7 @@ struct ShaderAttribute
 };
 std::ostream& operator<<(std::ostream& stream, const ShaderAttribute& attribute);
 
-using ShaderSources         = std::unordered_map<unsigned int, std::string>;
+using ShaderSources         = std::unordered_map<ShaderType, std::string>;
 using ShaderCompilationLogs = std::unordered_map<std::string, std::string>;
 using ShaderCompileStatuses = std::unordered_map<std::string, bool>;
 using ShaderUniforms        = std::unordered_map<std::string, ShaderUniform>;

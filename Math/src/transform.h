@@ -10,10 +10,10 @@ private:
     vec3 m_Rotation;
     vec3 m_Scale;
 
-    mat4 m_Matrix;
-    mat4 m_Inverse;
-
-    void compute();
+    mutable mat4 m_Matrix;
+    mutable mat4 m_Inverse;
+    mutable bool computed;
+    void compute() const;
 public:
     Transform();
 

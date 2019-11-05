@@ -8,8 +8,7 @@
 
 struct Renderer2DLayer : public Layer
 {
-    Renderer2D renderer;
-    Ref<Shader> shader;
+    Scope<Renderer2D> renderer = nullptr;
 
     unsigned int hSubdivisions = 400;
     unsigned int vSubdivisions = 225;
@@ -18,11 +17,15 @@ struct Renderer2DLayer : public Layer
 
     Renderer2DLayer() : Layer("Renderer2D Layer") {}
 
+    
     void onLoad()
     {
-        shader = std::make_shared<Shader>();
-        if (!shader->compile("res/shaders/Renderer2DShader.glsl"))
-            shader->debug();
+        renderer = MakeScope<Renderer2D>();
+    }
+
+    void onUnload()
+    {
+        renderer.release();
     }
 
     void onRender(float deltaTime)
@@ -32,7 +35,7 @@ struct Renderer2DLayer : public Layer
 
         std::uniform_real_distribution<float> Float(0.0f, 1.0f);
 
-        renderer.begin(shader, mat4::Orthographic(0, width, 0, height, 1, -1));
+        renderer->begin(mat4::Orthographic(0, width, 0, height, 1, -1));
 
         float hSize = width / (float) hSubdivisions;
         float vSize = height / (float) vSubdivisions;
@@ -48,13 +51,12 @@ struct Renderer2DLayer : public Layer
                 color.x = Float(random);
                 color.y = Float(random);
                 color.z = Float(random);
-                renderer.fillRect(x, y, hSize, vSize, color);
+                renderer->fillRect(x, y, hSize, vSize, color);
             }
         }
-        renderer.end();
+        renderer->end();
     }
 
-    void onUnload() {}
 };
 
 struct MeshLayer : public Layer
@@ -69,7 +71,7 @@ struct MeshLayer : public Layer
     float rotationSpeed = 60;
     float rotation;
 
-    MeshLayer(const std::string& shaderFilename, const std::string& meshFilename, const mat4& modelMatrix) 
+    MeshLayer(const std::string& shaderFilename, const std::string& meshFilename, const mat4& modelMatrix = mat4()) 
     : shaderFilename(shaderFilename), meshFilename(meshFilename), ModelMatrix(modelMatrix)
     {
     }
@@ -81,6 +83,8 @@ struct MeshLayer : public Layer
         {
             shader = MakeRef<Shader>();
             shader->compile(shaderFilename);
+            if (!shader->isValid())
+                shader->debug();
             Assets<Shader>::Add(shaderFilename, shader);
         }
 
@@ -95,15 +99,23 @@ struct MeshLayer : public Layer
         pipeline.depthTesting = true;
         pipeline.blending = true;
         pipeline.blendingMode = BlendingMode::Add;
-        pipeline.srcBlending = BlendingFactor::SrcAlpha;
-        pipeline.dstBlending = BlendingFactor::OneMinusSrcAlpha;
+        pipeline.srcFactor = BlendingFactor::SrcAlpha;
+        pipeline.dstFactor = BlendingFactor::OneMinusSrcAlpha;
     }
 
     void onRender(float deltaTime)
     {
+        mat4 projection;
+        vec3 translation;
+
+        projection = mat4::PerspectiveFov(90, 16, 9, 0.1f, 1000.0f); // width & height aren't correct anyway
+        translation = vec3(0, 0, -2.5);
+
         rotation += deltaTime;
         shader->bind();
         shader->setUniform("u_ModelMatrix", mat4::RotationY(rotationSpeed * rotation) * ModelMatrix);
+        shader->setUniform("u_ViewMatrix", mat4::Translation(translation));
+        shader->setUniform("u_ProjectionMatrix", projection);
         Render::ConfigurePipeline(pipeline);
         Render::DrawIndexed(*mesh->getVertexArray(), *mesh->getIndexBuffer());  
     }
@@ -121,8 +133,10 @@ int main()
     // window->setVSync(false);
     window->pushLayer(new FPSLayer(2));
     // window->pushLayer(new Renderer2DLayer());
-    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(-0.5f, 0, 0)));
-    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(+0.5f, 0, 0)));
+    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/cube.obj"));
+    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/queen_of_sea.obj"));
+    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(-0.5f, 0, 0)));
+    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(+0.5f, 0, 0)));
 
     //MainLoop
     while (!window->shouldClose())

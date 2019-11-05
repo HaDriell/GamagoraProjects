@@ -98,10 +98,11 @@ mat4 mat4::Orthographic(float left, float right, float top, float bottom, float 
 
 mat4 mat4::Perspective(float fov, float aspectRatio, float near, float far)
 {
-    float q = 1.f / std::tan(deg2rad * fov * 0.5f);
-    float a = q / aspectRatio;
-    float b = (near + far) / (near - far);
-    float c = (2.0f * near * far) / (near - far);
+    float q = 1.0f / std::tan(deg2rad * 0.5f * fov);
+    float a = q * aspectRatio;
+
+    float b = -(far + near) / (far - near);
+    float c = -2.0f * far * near / (far - near);
 
     return mat4(
         a, 0, 0, 0,
@@ -109,6 +110,12 @@ mat4 mat4::Perspective(float fov, float aspectRatio, float near, float far)
         0, 0, b,-1,
         0, 0, c, 0);
 }
+
+mat4 mat4::PerspectiveFov(float fov, float width, float height, float near, float far)
+{
+    return mat4::Perspective(fov, height / width, near, far);
+}
+
 
 mat4 mat4::Translation(const vec3& v)
 {

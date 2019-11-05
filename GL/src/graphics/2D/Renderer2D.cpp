@@ -1,33 +1,121 @@
 #include "Renderer2D.h"
 
 #include <string>
-
 #include "../Render.h"
 
 
-#define MAX_SPRITES     60000
-#define MAX_VERTICES    MAX_SPRITES * 4
-#define MAX_INDICES     MAX_SPRITES * 6
 
-Renderer2D::Renderer2D()
+///////////////////////////////////////////////////////////////////////////////
+// Renderer2D Rendering Pipeline //////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+const RenderPipeline R2DPipeline = RenderPipeline(false, true, BlendingMode::Add, BlendingFactor::SrcAlpha, BlendingFactor::OneMinusSrcAlpha, false);
+
+const BufferLayout R2DLayout = BufferLayout{
+    { VertexAttributeType::Float2, "Position"   },
+    { VertexAttributeType::Float3, "Color"      },
+    { VertexAttributeType::Float2, "UV"         },
+    { VertexAttributeType::Float,  "TextureID"  },
+};
+
+const std::string R2DShader = "R2DShader";
+const std::string R2DVertexShaderSource = R"(
+    #version 450 core
+
+    in vec2     Position;
+    in vec3     Color;
+    in vec2     UV;
+    in float    TextureID;
+
+    out vec2    vs_Position;
+    out vec3    vs_Color;
+    out vec2    vs_UV;
+    out float   vs_TextureID;
+
+
+    void main()
+    {
+        gl_Position     = vec4(Position, 0.0, 1.0);
+        
+        vs_Position     = Position;
+        vs_Color        = Color;
+        vs_UV           = UV;
+        vs_TextureID    = TextureID;
+    }
+)";
+
+const std::string R2DFragmentShaderSource = R"(
+    #version 450 core
+
+    in vec2     vs_Position;
+    in vec3     vs_Color;
+    in vec2     vs_UV;
+    in float    vs_TextureID;
+
+    out vec4 fs_Color;
+
+    uniform sampler2D u_Texture[32];
+
+    void main()
+    {
+        fs_Color = vec4(vs_Color, 1);
+/*
+        if (vs_TextureID > 0.0)
+        {
+            int TID = int(vs_TextureID);
+            fs_Color *= texture(u_Texture[TID], vs_UV);
+        }
+*/
+    }
+)";
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Renderer2D Functions ///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+Renderer2D::Renderer2D() : batchSize(0), batchCapacity(10000)
 {
     //Use an interleaved VertexBuffer
     vertexBuffer    = std::make_shared<VertexBuffer>();
     vertexArray     = std::make_shared<VertexArray>();
     indexBuffer     = std::make_shared<IndexBuffer>();
+    shader          = Renderer2D::LoadShader();
 
     //Bind VertexBuffer to VertexArray
-    vertexBuffer->defineLayout(Renderer2DVertexLayout);
+    vertexBuffer->defineLayout(R2DLayout);
     vertexArray->addVertexBuffer(vertexBuffer);
 }
 
-void Renderer2D::begin(Ref<Shader> activeShader, const mat4& root, unsigned int batchCapacity)
+
+Ref<Shader> Renderer2D::LoadShader()
+{
+    Ref<Shader> shader = Assets<Shader>::Find(R2DShader);
+    if (!shader)
+    {
+        shader = MakeRef<Shader>();
+        ShaderSources sources;
+        sources[ShaderType::Vertex]     = R2DVertexShaderSource;
+        sources[ShaderType::Fragment]   = R2DFragmentShaderSource; 
+        shader->compile(sources);
+        if (!shader->isValid())
+            shader->debug();
+        Assets<Shader>::Add(R2DShader, shader);
+    }
+    return shader;
+}
+
+void Renderer2D::begin(const mat4& root, unsigned int batchCapacity)
 {
     //Clean any previous Batch
-    if (batchSize != 0) end();
+    if (batchSize > 0)
+    {
+        LogWarning("Forcing {0} Sprites to be rendered : Begining a new Batch.", batchSize);
+        end();
+    }
 
-    //Setup the shader reference
-    shader = activeShader;
+    batchSize = 0;
+    this->batchCapacity = batchCapacity;
 
     //Setup the stack with the root as a base
     transformationStack.clear();
@@ -36,10 +124,9 @@ void Renderer2D::begin(Ref<Shader> activeShader, const mat4& root, unsigned int 
     //Setup the memory buffers
     vertices.clear();
     vertices.reserve(batchCapacity * 4);
-
 }
 
-void Renderer2D::end(bool restart)
+void Renderer2D::end()
 {
     //Protect against empty Batches
     if (batchSize == 0) return;
@@ -64,23 +151,13 @@ void Renderer2D::end(bool restart)
 
     
     //Do Indexed Draw Call
-    RenderPipeline pipeline;
-    pipeline.blending = true;
-    pipeline.blendingMode = BlendingMode::Add;
-    pipeline.srcBlending = BlendingFactor::SrcAlpha;
-    pipeline.dstBlending = BlendingFactor::OneMinusSrcAlpha;
-    Render::ConfigurePipeline(pipeline);
     shader->bind();
+    Render::ConfigurePipeline(R2DPipeline);
     Render::DrawIndexed(*vertexArray, *indexBuffer);
 
     //Reset geometry buffer
     vertices.clear();
     batchSize = 0;
-
-    if (!restart)
-    {
-        shader.reset(); // drop Shader reference
-    }
 }
 
 void Renderer2D::push(const mat4& matrix, bool absolute)
@@ -102,7 +179,7 @@ void Renderer2D::pop()
 void Renderer2D::fillRect(float x, float y, float width, float height, const vec3& color)
 {
     mat4 transform = transformationStack.back();
-    Renderer2DVertex vertex;
+    Vertex2D vertex;
 
     vertex.position     = transform * vec2(x, y);
     vertex.color        = color;
@@ -127,9 +204,9 @@ void Renderer2D::fillRect(float x, float y, float width, float height, const vec
     vertex.uv           = vec2(0);
     vertex.textureID    = 0;
     vertices.push_back(vertex);
-
+    
     batchSize++;
-    if (batchSize >= MAX_SPRITES) end(true);
+    if (batchSize >= batchCapacity) end();
 }
 
 // void Renderer2D::drawImage(float x, float y, float width, float height, const Texture& texture, const vec3& color)

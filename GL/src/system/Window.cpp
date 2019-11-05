@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <Log.h>
 
-void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 void glfw_error_callback(int error, const char* description);
 
 void OnWindowMoved(GLFWwindow* window, int x, int y)
@@ -210,7 +210,9 @@ Window::Window(const WindowSettings& settings)
         if (!glfwInit())
         {
             LogError("Failed to initialize GLFW3 !");
-        } else {
+        }
+        else 
+        {
             LogTrace("Binding Logger to the GLFW3 error callback");
             glfwSetErrorCallback(glfw_error_callback);
         }
@@ -225,7 +227,7 @@ Window::Window(const WindowSettings& settings)
     //OpenGL Context setup
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, settings.glMajorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, settings.glMinorVersion);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, settings.glCoreProfile ? GLFW_OPENGL_CORE_PROFILE : GLFW_OPENGL_COMPAT_PROFILE);
 
     glfwWindowHint(GLFW_DECORATED, settings.decorated ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, settings.resizeable ? GLFW_TRUE : GLFW_FALSE);

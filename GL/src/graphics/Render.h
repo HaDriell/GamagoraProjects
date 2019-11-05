@@ -11,7 +11,7 @@ enum BlendingFactor
 {
     Zero, One, 
     SrcColor, OneMinusSrcColor,
-    DstColor, OneMinusDstColor, 
+    DstColor, OneMinusDstColor,
     SrcAlpha, OneMinusSrcAlpha,
     DstAlpha, OneMinusDstAlpha,
 };
@@ -24,14 +24,21 @@ enum BlendingMode
 struct RenderPipeline
 {
     //Depth Testing
-    bool            depthTesting    = false;
+    bool            depthTesting;
     //Face culling (culls back face)
-    bool            faceCulling     = false;
+    bool            faceCulling;
     //Blending Configuration
-    bool            blending        = false;
-    BlendingFactor  srcBlending     = BlendingFactor::One;
-    BlendingFactor  dstBlending     = BlendingFactor::Zero;
-    BlendingMode    blendingMode    = BlendingMode::Add;
+    bool            blending;
+    BlendingFactor  srcFactor;
+    BlendingFactor  dstFactor;
+    BlendingMode    blendingMode;
+
+    RenderPipeline( bool depthTesting = false, 
+                    bool blending = false, 
+                    BlendingMode blendingMode = BlendingMode::Add,
+                    BlendingFactor sourceFactor = BlendingFactor::One,
+                    BlendingFactor destinationFactor = BlendingFactor::Zero, 
+                    bool faceCulling = false);
 };
 
 

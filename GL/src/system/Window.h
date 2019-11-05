@@ -11,8 +11,9 @@ struct WindowSettings
     std::string title  = "Window";
     int glMajorVersion = 4; 
     int glMinorVersion = 5;
-    int width          = 800;
-    int height         = 450;
+    bool glCoreProfile = false;
+    int width          = 1366;
+    int height         = 768;
     bool decorated     = true;
     bool resizeable    = true;
     bool vsync         = true;

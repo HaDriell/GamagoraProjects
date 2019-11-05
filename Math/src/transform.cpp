@@ -1,44 +1,44 @@
 #include "transform.h"
 
 
-Transform::Transform() : m_Position(vec3()), m_Rotation(vec3()), m_Scale(vec3(1)), m_Matrix(mat4()), m_Inverse(mat4())
+Transform::Transform() : m_Position(vec3()), m_Rotation(vec3()), m_Scale(vec3(1)), m_Matrix(mat4()), m_Inverse(mat4()), computed(true)
 {
 }
 
 void Transform::setPosition(const vec3& position)
 {
     m_Position = position;
-    compute();
+    computed = false;
 }
 
 void Transform::setRotation(const vec3& rotation)
 {
     m_Rotation = rotation;
-    compute();
+    computed = false;
 }
 
 void Transform::setScale(const vec3& scale)
 {
     m_Scale = scale;
-    compute();
+    computed = false;
 }
 
 void Transform::translate(const vec3& translation)
 {
     m_Position += translation;
-    compute();
+    computed = false;
 }
 
 void Transform::rotate(const vec3& angles)
 {
     m_Rotation += angles;
-    compute();
+    computed = false;
 }
 
 void Transform::scale(const vec3& scales)
 {
     m_Scale *= scales;
-    compute();
+    computed = false;
 }
 
 vec3 Transform::getPosition() const 
@@ -69,20 +69,26 @@ mat4 Transform::getInverse() const
 
 vec3 Transform::multiply(const vec3& v, float w) const
 {
+    compute();
     vec4 t = m_Matrix * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 
 vec3 Transform::multiplyInverse(const vec3& v, float w) const
 {
+    compute();
     vec4 t = m_Inverse * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 
-void Transform::compute()
+void Transform::compute() const
 {
-    //Compute Matrix
-    m_Matrix = mat4::Scale(m_Scale) * mat4::RotationYXZ(m_Rotation) * mat4::Translation(m_Position);
-    //Compute Inverse
-    m_Inverse = m_Matrix.inverse();
+    if (!computed)
+    {
+        //Compute Matrix
+        m_Matrix = mat4::Scale(m_Scale) * mat4::RotationYXZ(m_Rotation) * mat4::Translation(m_Position);
+        //Compute Inverse
+        m_Inverse = m_Matrix.inverse();
+        computed = true;
+    }
 }

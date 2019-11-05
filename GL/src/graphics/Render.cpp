@@ -35,6 +35,10 @@ GLenum toOpenGLBlendMode(BlendingMode mode)
     return GL_FALSE;
 }
 
+RenderPipeline::RenderPipeline(bool depthTesting, bool blending, BlendingMode blendingMode, BlendingFactor sourceFactor, BlendingFactor destinationFactor, bool faceCulling)
+:   depthTesting(depthTesting), blending(blending), blendingMode(blendingMode), srcFactor(sourceFactor), dstFactor(destinationFactor), faceCulling(faceCulling)
+{
+}
 
 void Render::Debug()
 {
@@ -55,7 +59,7 @@ void Render::ConfigurePipeline(const RenderPipeline& pipeline)
     {
         glEnable(GL_BLEND);
         glBlendEquation(toOpenGLBlendMode(pipeline.blendingMode));
-        glBlendFunc(toOpenGLBlendFactor(pipeline.srcBlending), toOpenGLBlendFactor(pipeline.dstBlending));
+        glBlendFunc(toOpenGLBlendFactor(pipeline.srcFactor), toOpenGLBlendFactor(pipeline.dstFactor));
     }
 
     if (!pipeline.depthTesting)

@@ -24,6 +24,7 @@ struct mat4
 
     static mat4 Orthographic(float left, float right, float top, float bottom, float near, float far);
     static mat4 Perspective(float fov, float aspectRatio, float near, float far);
+    static mat4 PerspectiveFov(float fov, float width, float height, float near, float far);
     static mat4 LookAt(const vec3& position, const vec3& target, const vec3& up);
 
     static mat4 Translation(float x, float y, float z);
