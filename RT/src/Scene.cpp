@@ -177,7 +177,7 @@ void Scene::render()
     float scale = std::tan(camera.fov * deg2rad / 2);
 
     //Build the R matrix
-    mat4 rotation = mat4::RotationYXZ(camera.rotation);
+    mat4 rotation = mat4::RotationXYZ(camera.rotation);
 
     vec3 u = (rotation * vec3::X).normalize();
     vec3 v = (rotation * vec3::Y).normalize();

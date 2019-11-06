@@ -182,7 +182,7 @@ mat4 mat4::Rotation(float degrees, const vec3& axis)
                   0,              0,              0,    1);
 }
 
-mat4 mat4::RotationYXZ(const vec3& degrees)
+mat4 mat4::RotationXYZ(const vec3& degrees)
 {
     mat4 rot_x = mat4::RotationX(degrees.x);
     mat4 rot_y = mat4::RotationY(degrees.y);

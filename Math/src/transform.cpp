@@ -86,7 +86,7 @@ void Transform::compute() const
     if (!computed)
     {
         //Compute Matrix
-        m_Matrix = mat4::Scale(m_Scale) * mat4::RotationYXZ(m_Rotation) * mat4::Translation(m_Position);
+        m_Matrix = mat4::Scale(m_Scale) * mat4::RotationXYZ(m_Rotation) * mat4::Translation(m_Position);
         //Compute Inverse
         m_Inverse = m_Matrix.inverse();
         computed = true;

@@ -30,7 +30,7 @@ struct mat4
     static mat4 Translation(float x, float y, float z);
     static mat4 Translation(const vec3& v);
     static mat4 Rotation(float degrees, const vec3& axis);
-    static mat4 RotationYXZ(const vec3& degrees);
+    static mat4 RotationXYZ(const vec3& degrees);
     static mat4 RotationX(float degrees);
     static mat4 RotationY(float degrees);
     static mat4 RotationZ(float degrees);
