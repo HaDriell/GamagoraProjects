@@ -13,6 +13,10 @@ private:
 public:
     ImageLoader();
 
+    unsigned int getWidth() const;
+    unsigned int getHeight() const;
+    const unsigned char* data() const;
+
 protected:
     bool onLoad(const std::string& path);
 };

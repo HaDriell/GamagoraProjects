@@ -83,3 +83,18 @@ bool ImageLoader::onLoad(const std::string& path)
     FreeImage_Unload(bitmap);
     return loadedImage;
 }
+
+unsigned int ImageLoader::getWidth() const
+{
+    return width;
+}
+
+unsigned int ImageLoader::getHeight() const
+{
+    return height;
+}
+
+const unsigned char* ImageLoader::data() const
+{
+    return buffer;
+}

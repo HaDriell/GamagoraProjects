@@ -32,6 +32,7 @@ public:
 protected:
     bool onLoad(const std::string& path) override;
 
+private:
     bool parse(std::ifstream& stream);
     bool parsePosition(std::istringstream& stream);
     bool parseNormal(std::istringstream& stream);

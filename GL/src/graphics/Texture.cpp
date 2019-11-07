@@ -4,6 +4,11 @@
 #include <FreeImage.h>
 #include <iostream>
 
+
+////////////////////////////////////////////////////////////////////////////////
+// OpenGL enum Converters //////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 GLenum toOpenGLTextureFilter(TextureFilter filter)
 {
     switch (filter)
@@ -40,61 +45,9 @@ GLenum toOpenGLTextureFormat(TextureFormat format)
     return GL_FALSE;
 }
 
-
-
-
-
-
-
-Image::Image(unsigned int width, unsigned int height) : width(width), height(height), buffer(nullptr)
-{
-    buffer = new unsigned char[4 * width * height];
-}
-
-Image::~Image()
-{
-    delete[] buffer;
-}
-
-void Image::read(unsigned int width, unsigned int height, unsigned char* buffer)
-{
-    //Deallocate old buffer
-    delete[] this->buffer;
-    //Update settigns
-    this->width     = width;
-    this->height    = height;
-
-    //Allocate buffer
-    this->buffer = new unsigned char[4 * width * height];
-    //Copy buffer
-    for (int i = 0; i < 4 * width * height; i++)
-    {
-        this->buffer[i] = buffer[i];
-    }
-}
-
-unsigned int Image::getWidth() const
-{
-    return width;
-}
-
-unsigned int Image::getHeight() const
-{
-    return height;
-}
-
-const unsigned char* Image::data() const 
-{
-    return buffer; 
-}
-
-
-
-
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////
+// Texture2D Functions /////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 Texture2D::Texture2D() : handle(0)
 {
@@ -118,10 +71,6 @@ void Texture2D::defineSettings(const TextureSettings& settings)
         //TODO : check how mipmap is actually handled, this might be totally wrong here
         glGenerateMipmap(GL_TEXTURE_2D);
     }
-}
-void Texture2D::defineImage(const Image& image)
-{
-    uploadData(image.data(), image.getWidth(), image.getHeight(), TextureFormat::RGBA);
 }
 
 void Texture2D::defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format)

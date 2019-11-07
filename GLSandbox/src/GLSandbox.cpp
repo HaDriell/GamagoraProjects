@@ -3,6 +3,7 @@
 #include <random>
 
 #include <Common.h>
+#include <File.h>
 #include <System.h>
 #include <Graphics.h>
 
@@ -126,6 +127,7 @@ int main()
     WindowSettings settings;
     settings.glMajorVersion = 4;
     settings.glMinorVersion = 5;
+    settings.glCoreProfile  = true;
     settings.resizeable     = false;
 
     //Create the Window
@@ -134,9 +136,38 @@ int main()
     window->pushLayer(new FPSLayer(2));
     // window->pushLayer(new Renderer2DLayer());
     // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/cube.obj"));
-    window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/queen_of_sea.obj"));
-    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(-0.5f, 0, 0)));
-    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/otter.obj", mat4::Translation(+0.5f, 0, 0)));
+    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/queen_of_sea.obj"));
+
+    ImageLoader diffuseLoader;
+    diffuseLoader.load("res/textures/tree_Diffuse.jpeg");
+    Texture2D diffuseTex;
+    diffuseTex.defineImage(diffuseLoader.data(), diffuseLoader.getWidth(), diffuseLoader.getHeight(), TextureFormat::RGBA);
+
+    MTLLoader mtlLoader;
+    mtlLoader.load("res/materials/tree.mtl");
+    MTLMaterial material = mtlLoader.getMaterials()[0];
+
+    Shader shader;
+    shader.compile("res/shaders/phong.glsl");
+    // shader.debug();
+
+    Mesh mesh;
+    mesh.loadOBJ("res/meshes/tree.obj");
+    
+    Camera camera = Camera(mat4::PerspectiveFov(90.0, 16, 9, 0.1, 1000), vec3(0, 0, -3));
+    struct Light {
+        vec3    position;
+        vec3    color;
+        float   intensity;
+    };
+
+    Light light = Light{ vec3(0, 0, 1), vec3(1), 0.1 };
+
+    Timer t;
+
+    RenderPipeline pipeline;
+    pipeline.blending = true;
+    pipeline.depthTesting = true;
 
     //MainLoop
     while (!window->shouldClose())
@@ -144,6 +175,32 @@ int main()
         Render::Debug();
         window->update();
         Render::Clear();
+        //PHONG TEST !
+        shader.bind();
+        //Transforms
+        shader.setUniform("ProjectionMatrix", camera.getProjectionMatrix());
+        shader.setUniform("ViewMatrix", camera.getViewMatrix());
+        shader.setUniform("ModelMatrix", mat4::RotationY(30.0 * t.elapsed()));
+
+
+        //Material setup
+        shader.setUniform("material.ambientColor", material.ambientColor);
+        shader.setUniform("material.diffuseColor", material.diffuseColor);
+        shader.setUniform("material.specularColor", material.specularColor);
+        //Texture Mapping
+        // diffuseTex.bind(0);
+        // shader.setUniform("material.ambientMap", 0);
+        // shader.setUniform("material.diffuseMap", 0);
+        //Light setup
+        shader.setUniform("light.position", light.position);
+        shader.setUniform("light.color", light.color);
+        shader.setUniform("light.intensity", light.intensity);
+
+        //Camera setup
+        shader.setUniform("camera.position", camera.getPosition());
+        Render::ConfigurePipeline(pipeline);
+        Render::DrawIndexed(*mesh.getVertexArray(), *mesh.getIndexBuffer());
+
         window->render();
     }
     window.reset(); // deletes the Window
