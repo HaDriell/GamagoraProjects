@@ -80,6 +80,7 @@ private:
     bool parse(std::istream& stream);
 
     bool parseMaterialName(std::istream& stream);
+    bool parseMaterialShininiess(std::istream& stream);
     bool parseMaterialAmbientColor(std::istream& stream);
     bool parseMaterialDiffuseColor(std::istream& stream);
     bool parseMaterialSpecularColor(std::istream& stream);
@@ -89,5 +90,4 @@ private:
     bool parseMaterialAmbientMap(std::istream& stream);
     bool parseMaterialDiffuseMap(std::istream& stream);
     bool parseMaterialSpecularMap(std::istream& stream);
-
 };

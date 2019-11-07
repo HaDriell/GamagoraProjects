@@ -24,8 +24,8 @@ uniform mat4 ProjectionMatrix = mat4(1);
 void main()
 {
     mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-    vs_Position = (MVP * vec4(Position, 1.0f)).xyz;
-    vs_Normal   = normalize( (MVP * vec4(Normal, 0.0f)).xyz );
+    vs_Position = (ModelMatrix * vec4(Position, 1.0f)).xyz;
+    vs_Normal   = normalize( (ModelMatrix * vec4(Normal, 0.0f)) ).xyz ;
     vs_Color    = Color;
     vs_UV       = UV;
 
@@ -53,15 +53,10 @@ struct Camera
 
 struct Material
 {
-    //Colors
-    vec3        ambientColor;
-    vec3        diffuseColor;
-    vec3        specularColor;
+    vec3        ambient;
+    vec3        diffuse;
+    vec3        specular;
     float       shininess;
-    //Textures
-    // sampler2D   ambientMap;
-    // sampler2D   diffuseMap;
-    // sampler2D   specularMap;
 };
 
 //Interface
@@ -79,36 +74,28 @@ uniform Light       light;
 uniform Camera      camera;
 uniform Material    material;
 
-//Ambient is constant, doesn't care about Light
-vec3 AmbientColor()
-{
-    return material.ambientColor;
-}
-
-//Diffuse modulates the color depending on the angle between the light and the surface
-vec3 DiffuseColor()
-{
-    vec3 to_light = normalize(light.position - vs_Position);
-    float angle = max(dot(vs_Normal, to_light), 0.0);
-    return angle * material.diffuseColor;
-}
-
-//Specular modulates the color depending on the angle between the Camera and the surface
-vec3 SpecularColor()
-{
-    vec3 to_light = normalize(light.position - vs_Position);
-    vec3 to_camera = normalize(camera.position - vs_Position);
-    vec3 from_surface = reflect(-to_light, vs_Normal);
-    float specularity = pow(max(dot(to_camera, from_surface), 0.0), material.shininess);
-    return specularity * material.specularColor;
-}
-
-vec3 LightColor()
-{
-    return light.color * light.intensity;
-}
-
+//Phong Lighting
 void main()
 {
-    fs_Color = vec4( (AmbientColor() + DiffuseColor() + SpecularColor()) * LightColor(), 1.0);
+    vec3 lightDirection = normalize(light.position - vs_Position);
+    vec3 viewDirection = normalize(camera.position - vs_Position);
+    vec3 reflectDirection = reflect(-lightDirection, vs_Normal);
+    float lightDistance = distance(light.position, vs_Position);
+
+    //Light Illumination
+    vec3 illumination = light.color * light.intensity / (lightDistance * lightDistance);
+
+    //Ambient Component
+    vec3 ambient = material.ambient;
+
+    //Diffuse Component
+    float diffuseFactor = max(0.0, dot(vs_Normal, lightDirection));
+    vec3 diffuse = diffuseFactor * material.diffuse;
+
+    //Specular Component
+    float specularFactor = pow(max(0.0, dot(reflectDirection, viewDirection)), material.shininess);
+    vec3 specular = specularFactor * material.specular;
+
+    vec3 combination = (ambient + diffuse + specular) * illumination;
+    fs_Color = vec4(combination, 1.0);
 }

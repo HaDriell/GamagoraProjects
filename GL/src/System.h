@@ -15,3 +15,4 @@
 #include "system/Window.h"
 #include "system/Layer.h"
 #include "system/layers/FPSLayer.h"
+#include "system/layers/CameraController.h"

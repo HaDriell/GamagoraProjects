@@ -133,17 +133,17 @@ mat4 mat4::Translation(float x, float y, float z)
 
 mat4 mat4::LookAt(const vec3& position, const vec3& target, const vec3& up)
 {
-    vec3 f = (target - position).normalize();
-    vec3 s = vec3::cross(f, up.normalize());
-    vec3 u = vec3::cross(s, f);
+    vec3 zAxis = (target - position).normalize();
+    vec3 xAxis = vec3::cross(up, zAxis).normalize();
+    vec3 yAxis = vec3::cross(zAxis, xAxis);
 
     mat4 view = mat4(
-        s.x, s.y, s.z,  0,
-        u.x, u.y, u.z,  0,
-        f.x, f.y, f.z,  0, //not inverted because we look into Z
-          0,   0,   0,  1);
+        xAxis.x, yAxis.x, zAxis.x,      0,
+        xAxis.y, yAxis.y, zAxis.y,      0,
+        xAxis.z, yAxis.z, zAxis.z,      0,
+              0,       0,       0,      1);
     
-    return view * mat4::Translation(-position.x, -position.y, -position.z);
+    return view * mat4::Translation(-position);
 }
 
 mat4 mat4::Scale(float x, float y, float z)

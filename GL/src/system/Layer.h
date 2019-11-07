@@ -2,6 +2,7 @@
 
 #include "../Common.h"
 
+#include "EventSystem.h"
 #include "WindowEvent.h"
 #include "MouseEvent.h"
 #include "KeyEvent.h"
@@ -15,11 +16,11 @@ private:
 
 protected:
     std::string name;
+    Window* getWindow();
 
 public:
     Layer(const std::string& name = "Layer");
     const std::string& getName() const;
-    const Window* getWindow() const;
 
     virtual void setWindow(Window* window) final;
 

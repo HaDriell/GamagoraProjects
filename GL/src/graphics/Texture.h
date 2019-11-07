@@ -49,6 +49,8 @@ public:
     Texture2D();
     ~Texture2D();
 
+    void loadImage(const std::string& path, const TextureSettings& settings = TextureSettings());    
+
     void defineSettings(const TextureSettings& settings);
     void defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);
     

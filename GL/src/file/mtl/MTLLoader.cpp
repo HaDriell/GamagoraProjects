@@ -6,7 +6,7 @@
 
 bool __parseMTLString(std::istream& stream, std::string& string)
 {
-    return !std::getline(stream, string).bad();
+    return !std::getline(stream, string, ' ').bad();
 }
 
 bool __parseMTLScalar(std::istream& stream, float& scalar)
@@ -24,7 +24,7 @@ bool __parseMTLVec3(std::istream& stream, vec3& color)
     return !(stream >> color.x >> color.y >> color.z).bad();
 }
 
-bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
+bool __parseMTLTexture(std::istream& stream, std::string& cwd, MTLTexture& texture)
 {
     std::string key;
     while (std::getline(stream, key, ' '))
@@ -37,6 +37,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
                 LogError("Failed to read MTL Texture option {0}.", key);
                 return false;
             }
+            continue;
         }
 
         if (key == "-cc")
@@ -51,6 +52,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
             {
                 texture.colorCorrection = value == "on";
             }
+            continue;
         }
 
         if (key == "-clamp")
@@ -65,6 +67,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
             {
                 texture.clamp = value == "on";
             }
+            continue;
         }
 
         if (key == "-blendu")
@@ -75,6 +78,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
                 LogError("Failed to read MTL Texture option {0}.", key);
                 return false;
             }
+            continue;
         }
 
         if (key == "-blendv")
@@ -85,6 +89,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
                 LogError("Failed to read MTL Texture option {0}.", key);
                 return false;
             }
+            continue;
         }
 
         if (key == "-imfchan")
@@ -95,6 +100,7 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
                 LogError("Failed to read MTL Texture option {0}.", key);
                 return false;
             }
+            continue;
         }
 
         if (key == "-mm")
@@ -105,7 +111,11 @@ bool __parseMTLTexture(std::istream& stream, MTLTexture& texture)
                 LogError("Failed to read MTL Texture option {0}.", key);
                 return false;
             }
+            continue;
         }
+
+        texture.path = key;
+        break;
     }
     return true;
 }
@@ -134,12 +144,12 @@ bool MTLLoader::onLoad(const std::string& path)
     if (i != std::string::npos)
     {
         cwd = path.substr(0, i);
+        LogDebug("Using CWD path '{0}' to load MTL Library", cwd);
     }
     else
     {
-        LogWarning("Failed to identify the current working directory !");
         cwd = ".";
-        //Continue because sometimes it's just simple materials & people won't care
+        LogWarning("Failed to identify the MTL File CWD ! Defaulting to current CWD");
     }
 
     //Parse the file stream
@@ -189,6 +199,12 @@ bool MTLLoader::parse(std::istream& stream)
             if (header == "Ks" && !parseMaterialSpecularColor(stream))
             {
                 LogError("Failed to load MTL File (Line {0}) : Invalid Specular Color", lineNumber);
+                return false;
+            }
+
+            if (header == "Ns" && !parseMaterialShininiess(stream))
+            {
+                LogError("Failed to load MTL File (Line {0}) : Invalid Shininess", lineNumber);
                 return false;
             }
 
@@ -242,6 +258,12 @@ bool MTLLoader::parseMaterialName(std::istream& stream)
     return true;
 }
 
+bool MTLLoader::parseMaterialShininiess(std::istream& stream)
+{
+    if (materials.empty()) return false;
+    return __parseMTLScalar(stream, materials.back().shininess);
+}
+
 bool MTLLoader::parseMaterialAmbientColor(std::istream& stream)
 {
     if (materials.empty()) return false;
@@ -285,19 +307,19 @@ bool MTLLoader::parseMaterialIlluminationModel(std::istream& stream)
 bool MTLLoader::parseMaterialAmbientMap(std::istream& stream)
 {
     if (materials.empty()) return false;
-    return __parseMTLTexture(stream, materials.back().ambientMap);
+    return __parseMTLTexture(stream, cwd, materials.back().ambientMap);
 }
 
 bool MTLLoader::parseMaterialDiffuseMap(std::istream& stream)
 {
     if (materials.empty()) return false;
-    return __parseMTLTexture(stream, materials.back().diffuseMap);
+    return __parseMTLTexture(stream, cwd, materials.back().diffuseMap);
 }
 
 bool MTLLoader::parseMaterialSpecularMap(std::istream& stream)
 {
     if (materials.empty()) return false;
-    return __parseMTLTexture(stream, materials.back().specularMap);
+    return __parseMTLTexture(stream, cwd, materials.back().specularMap);
 }
 
 std::vector<MTLMaterial> MTLLoader::getMaterials() const

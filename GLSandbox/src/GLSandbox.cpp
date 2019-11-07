@@ -130,6 +130,7 @@ int main()
     settings.glCoreProfile  = true;
     settings.resizeable     = false;
 
+
     //Create the Window
     Ref<Window> window = std::make_shared<Window>(settings);
     // window->setVSync(false);
@@ -138,68 +139,68 @@ int main()
     // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/cube.obj"));
     // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/queen_of_sea.obj"));
 
-    ImageLoader diffuseLoader;
-    diffuseLoader.load("res/textures/tree_Diffuse.jpeg");
-    Texture2D diffuseTex;
-    diffuseTex.defineImage(diffuseLoader.data(), diffuseLoader.getWidth(), diffuseLoader.getHeight(), TextureFormat::RGBA);
+    //Push the Camera Controller to the Window
+    CameraController cameraController = CameraController(Camera(mat4::PerspectiveFov(90.0f, settings.width, settings.height, 0.1f, 1000.0f), vec3(0, 0, - 5)));
+    window->pushLayer(&cameraController);
+
 
     MTLLoader mtlLoader;
     mtlLoader.load("res/materials/tree.mtl");
     MTLMaterial material = mtlLoader.getMaterials()[0];
 
+    MTLTexture  diffuseMap = material.diffuseMap;
+    Texture2D diffuseTex;
+    diffuseTex.loadImage(diffuseMap.path);
+
     Shader shader;
     shader.compile("res/shaders/phong.glsl");
-    // shader.debug();
+    if (!shader.isValid())
+        shader.debug();
 
     Mesh mesh;
     mesh.loadOBJ("res/meshes/tree.obj");
-    
-    Camera camera = Camera(mat4::PerspectiveFov(90.0, 16, 9, 0.1, 1000), vec3(0, 0, -3));
-    struct Light {
-        vec3    position;
-        vec3    color;
-        float   intensity;
-    };
-
-    Light light = Light{ vec3(0, 0, 1), vec3(1), 0.1 };
-
-    Timer t;
 
     RenderPipeline pipeline;
     pipeline.blending = true;
     pipeline.depthTesting = true;
 
+    Timer t;
     //MainLoop
     while (!window->shouldClose())
     {
+        Camera camera = cameraController.getCamera();
+
+
         Render::Debug();
         window->update();
         Render::Clear();
+
         //PHONG TEST !
         shader.bind();
-        //Transforms
-        shader.setUniform("ProjectionMatrix", camera.getProjectionMatrix());
-        shader.setUniform("ViewMatrix", camera.getViewMatrix());
-        shader.setUniform("ModelMatrix", mat4::RotationY(30.0 * t.elapsed()));
-
 
         //Material setup
-        shader.setUniform("material.ambientColor", material.ambientColor);
-        shader.setUniform("material.diffuseColor", material.diffuseColor);
-        shader.setUniform("material.specularColor", material.specularColor);
-        //Texture Mapping
-        // diffuseTex.bind(0);
-        // shader.setUniform("material.ambientMap", 0);
-        // shader.setUniform("material.diffuseMap", 0);
-        //Light setup
-        shader.setUniform("light.position", light.position);
-        shader.setUniform("light.color", light.color);
-        shader.setUniform("light.intensity", light.intensity);
+        shader.setUniform("material.ambient", material.ambientColor);
+        shader.setUniform("material.diffuse", material.diffuseColor);
+        shader.setUniform("material.specular", material.specularColor);
+
+        //Light setup (Positioned on Camera)
+        shader.setUniform("light.position", vec3(0, 5, 0));
+        shader.setUniform("light.color", vec3(1));
+        shader.setUniform("light.intensity", 10.0f);
 
         //Camera setup
         shader.setUniform("camera.position", camera.getPosition());
-        Render::ConfigurePipeline(pipeline);
-        Render::DrawIndexed(*mesh.getVertexArray(), *mesh.getIndexBuffer());
+
+        for (int i = -5; i <= 5; i++)
+        {
+            //Transforms
+            shader.setUniform("ProjectionMatrix", camera.getProjectionMatrix());
+            shader.setUniform("ViewMatrix", camera.getViewMatrix());
+            shader.setUniform("ModelMatrix", mat4::RotationY(30.0 * t.elapsed()) * mat4::Translation(i, 0, 0));
+            //Draw call
+            Render::ConfigurePipeline(pipeline);
+            Render::DrawIndexed(*mesh.getVertexArray(), *mesh.getIndexBuffer());
+        }
 
         window->render();
     }

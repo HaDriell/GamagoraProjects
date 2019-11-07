@@ -10,7 +10,7 @@ const std::string& Layer::getName() const
     return name;
 }
 
-const Window* Layer::getWindow() const
+Window* Layer::getWindow()
 {
     return window;
 }

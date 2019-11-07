@@ -1,8 +1,7 @@
 #include "Texture.h"
 
 #include <glad/glad.h>
-#include <FreeImage.h>
-#include <iostream>
+#include "../File.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +56,22 @@ Texture2D::Texture2D() : handle(0)
 Texture2D::~Texture2D()
 {
     glDeleteTextures(1, &handle);
+}
+
+
+void Texture2D::loadImage(const std::string& path, const TextureSettings& settings)
+{
+    ImageLoader loader;
+    if(loader.load(path))
+    {
+        defineImage(loader.data(), loader.getWidth(), loader.getHeight(), TextureFormat::RGBA);
+        defineSettings(settings);
+        LogDebug("Texture2D loaded from Image file '{0}'.  Dimensions {1}x{2}.", path, loader.getWidth(), loader.getHeight());
+    } 
+    else
+    {
+        LogWarning("Failed to resolve Image file '{0}'.", path);
+    } 
 }
 
 void Texture2D::defineSettings(const TextureSettings& settings)

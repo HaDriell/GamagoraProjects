@@ -16,6 +16,7 @@
 
 //Util integration
 #include "Timer.h"
+#include <functional>
 
 //Collections
 #include <vector>
