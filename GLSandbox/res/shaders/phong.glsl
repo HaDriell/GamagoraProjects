@@ -37,6 +37,7 @@ void main()
 //Fragment Shader
 #version 450 core
 
+
 //Custom data types
 struct Light
 {
@@ -94,7 +95,7 @@ void main()
 
     //Specular Component
     float specularFactor = pow(max(0.0, dot(reflectDirection, viewDirection)), material.shininess);
-    vec3 specular = specularFactor * material.specular;
+    vec3 specular = specularFactor * material.specular * 0.0;
 
     vec3 combination = (ambient + diffuse + specular) * illumination;
     fs_Color = vec4(combination, 1.0);

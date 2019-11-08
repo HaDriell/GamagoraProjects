@@ -7,3 +7,4 @@ const float rad2deg = 180.f / PI;
 
 float clamp(float min, float max, float value);
 float lerp(float start, float end, float percent);
+float inverseLerp(float start, float end, float value);

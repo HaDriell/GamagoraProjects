@@ -127,81 +127,97 @@ int main()
     WindowSettings settings;
     settings.glMajorVersion = 4;
     settings.glMinorVersion = 5;
+    settings.multisampling  = 8;    // Will probably be replaced by a custom anti-aliased FBO
     settings.glCoreProfile  = true;
     settings.resizeable     = false;
+    settings.visible        = false; //hide during the mesh loading
 
 
     //Create the Window
-    Ref<Window> window = std::make_shared<Window>(settings);
-    // window->setVSync(false);
-    window->pushLayer(new FPSLayer(2));
-    // window->pushLayer(new Renderer2DLayer());
-    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/cube.obj"));
-    // window->pushLayer(new MeshLayer("res/shaders/example.glsl", "res/meshes/queen_of_sea.obj"));
+    Ref<Window> window = MakeRef<Window>(settings);
+    window->pushLayer(new FPSLayer(1));
 
     //Push the Camera Controller to the Window
-    CameraController cameraController = CameraController(Camera(mat4::PerspectiveFov(90.0f, settings.width, settings.height, 0.1f, 1000.0f), vec3(0, 0, - 5)));
+    CameraController cameraController = CameraController(mat4::PerspectiveFov(90.0f, settings.width, settings.height, 0.1f, 1000.0f), vec3(0, 0, 5));
+    cameraController.setSpeed(3);
     window->pushLayer(&cameraController);
+    Scene scene = Scene(cameraController.getCamera());
+    window->pushLayer(&scene);
+
+    //Load Meshes here
+    {
+        Ref<Mesh> loader;
+        loader = MakeRef<Mesh>();   loader->loadOBJ("res/meshes/bunny.obj");        Assets<Mesh>::Add("bunny", loader);
+        loader = MakeRef<Mesh>();   loader->loadOBJ("res/meshes/cube.obj");         Assets<Mesh>::Add("cube", loader);
+        loader = MakeRef<Mesh>();   loader->loadOBJ("res/meshes/queen_of_sea.obj"); Assets<Mesh>::Add("queen_of_sea", loader);
+        loader = MakeRef<Mesh>();   loader->loadOBJ("res/meshes/otter.obj");        Assets<Mesh>::Add("otter", loader);
+        loader = MakeRef<Mesh>();   loader->loadOBJ("res/meshes/tree.obj");         Assets<Mesh>::Add("tree", loader);
+    }
+    window->show();
+
+    //Generate a bunch of nodes
+    {
+        std::default_random_engine random(0);
+        std::uniform_int_distribution<int>      IMesh(0, 4);
+        std::uniform_real_distribution<float>   FPos(-300, +300);
+        std::uniform_real_distribution<float>   FColor(0.01, 0.9);
+        std::uniform_real_distribution<float>   FShininess(0, 256);
+        std::uniform_real_distribution<float>   FScale(10, 20);
+        for (int i = 0; i < 25; i++)
+        {
+            Ref<Node> node = MakeRef<Node>();
+            //Setup Mesh
+            switch (IMesh(random))
+            {
+                case 0: node->setMesh(Assets<Mesh>::Find("bunny")); break;
+                case 1: node->setMesh(Assets<Mesh>::Find("cube")); break;
+                case 2: node->setMesh(Assets<Mesh>::Find("queen_of_sea")); break;
+                case 3: node->setMesh(Assets<Mesh>::Find("otter")); break;
+                case 4: node->setMesh(Assets<Mesh>::Find("tree")); break;
+            }
+
+            vec4 ambient = vec4(FColor(random), FColor(random), FColor(random), 1);
+            vec4 diffuse = vec4(FColor(random), FColor(random), FColor(random), 1);
+            vec4 specular = vec4(FColor(random), FColor(random), FColor(random), 1);
+            float shininess = FShininess(random);
+
+            Ref<Material> material = MakeRef<PhongMaterial>(vec4(0), ambient, diffuse, specular, shininess);
+            node->setMaterial(material);
+
+            //Random Transform
+            vec3 position = vec3(FPos(random), FPos(random), FPos(random));
+            float scale   = FScale(random);
+            LogDebug("Node Positioned at {0} {1} {2} with scale {3}", position.x, position.y, position.z, scale);
+
+            Transform transform;
+            transform.setPosition(position);
+            transform.setScale(vec3(scale));
+            node->setTransform(transform);
 
 
-    MTLLoader mtlLoader;
-    mtlLoader.load("res/materials/tree.mtl");
-    MTLMaterial material = mtlLoader.getMaterials()[0];
+            //Push to the Scene
+            scene.addNode(node);
+        }
 
-    MTLTexture  diffuseMap = material.diffuseMap;
-    Texture2D diffuseTex;
-    diffuseTex.loadImage(diffuseMap.path);
-
-    Shader shader;
-    shader.compile("res/shaders/phong.glsl");
-    if (!shader.isValid())
-        shader.debug();
-
-    Mesh mesh;
-    mesh.loadOBJ("res/meshes/tree.obj");
-
-    RenderPipeline pipeline;
-    pipeline.blending = true;
-    pipeline.depthTesting = true;
+        {
+            LightSetup randomSetup;
+            for (int i = 0; i < 10; i++)
+            {
+                vec3 position = vec3(FPos(random), FPos(random), FPos(random));
+                vec3 color    = vec3(FColor(random), FColor(random), FColor(random));
+                randomSetup.pointLights.push_back(PointLight(position, color, 1));
+            }
+            scene.setLights(randomSetup);
+        }
+    }
 
     Timer t;
     //MainLoop
     while (!window->shouldClose())
     {
-        Camera camera = cameraController.getCamera();
-
-
         Render::Debug();
         window->update();
         Render::Clear();
-
-        //PHONG TEST !
-        shader.bind();
-
-        //Material setup
-        shader.setUniform("material.ambient", material.ambientColor);
-        shader.setUniform("material.diffuse", material.diffuseColor);
-        shader.setUniform("material.specular", material.specularColor);
-
-        //Light setup (Positioned on Camera)
-        shader.setUniform("light.position", vec3(0, 5, 0));
-        shader.setUniform("light.color", vec3(1));
-        shader.setUniform("light.intensity", 10.0f);
-
-        //Camera setup
-        shader.setUniform("camera.position", camera.getPosition());
-
-        for (int i = -5; i <= 5; i++)
-        {
-            //Transforms
-            shader.setUniform("ProjectionMatrix", camera.getProjectionMatrix());
-            shader.setUniform("ViewMatrix", camera.getViewMatrix());
-            shader.setUniform("ModelMatrix", mat4::RotationY(30.0 * t.elapsed()) * mat4::Translation(i, 0, 0));
-            //Draw call
-            Render::ConfigurePipeline(pipeline);
-            Render::DrawIndexed(*mesh.getVertexArray(), *mesh.getIndexBuffer());
-        }
-
         window->render();
     }
     window.reset(); // deletes the Window

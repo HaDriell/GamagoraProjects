@@ -12,4 +12,9 @@
 #include "graphics/2D/Renderer2D.h"
 
 //3D Models
-#include "graphics/Mesh.h"
+#include "graphics/3D/Mesh.h"
+#include "graphics/3D/Scene.h"
+
+//Materials
+#include "graphics/Material/Material.h"
+#include "graphics/Material/PhongMaterial.h"

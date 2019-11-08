@@ -58,26 +58,26 @@ vec3 Transform::getScale() const
 
 mat4 Transform::getMatrix() const
 {
+    compute();
     return m_Matrix;
 }
 
 mat4 Transform::getInverse() const
 {
+    compute();
     return m_Inverse;
 }
 
 
 vec3 Transform::multiply(const vec3& v, float w) const
 {
-    compute();
-    vec4 t = m_Matrix * vec4(v.x, v.y, v.z, w);
+    vec4 t = getMatrix() * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 
 vec3 Transform::multiplyInverse(const vec3& v, float w) const
 {
-    compute();
-    vec4 t = m_Inverse * vec4(v.x, v.y, v.z, w);
+    vec4 t = getInverse() * vec4(v.x, v.y, v.z, w);
     return vec3(t.x, t.y, t.z);
 }
 

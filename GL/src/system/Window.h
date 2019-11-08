@@ -2,21 +2,24 @@
 
 #include "../Common.h"
 
+#include "Input.h"
 #include "EventSystem.h"
 #include "Layer.h"
 
 
 struct WindowSettings
 {
-    std::string title  = "Window";
-    int glMajorVersion = 4; 
-    int glMinorVersion = 5;
-    bool glCoreProfile = false;
-    int width          = 1366;
-    int height         = 768;
-    bool decorated     = true;
-    bool resizeable    = true;
-    bool vsync         = true;
+    std::string title   = "Window";
+    int glMajorVersion  = 4; 
+    int glMinorVersion  = 5;
+    bool glCoreProfile  = false;
+    int width           = 1366;
+    int height          = 768;
+    int multisampling   = 0;
+    bool visible        = true;
+    bool decorated      = true;
+    bool resizeable     = true;
+    bool vsync          = true;
 };
 
 
@@ -31,6 +34,8 @@ private:
     unsigned int width;
     unsigned int height;
 
+    //Internal systems
+    Input       input;
     EventSystem eventSystem;
     std::vector<Layer*> layers;
 
@@ -52,6 +57,7 @@ public:
     unsigned int getHeight() const;
 
 
+    const Input& inputs() const;
     EventSystem& events();
     void setVSync(bool enabled);
     void setTitle(const std::string& title);

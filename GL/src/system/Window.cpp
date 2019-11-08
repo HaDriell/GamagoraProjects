@@ -60,6 +60,7 @@ void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods)
         case GLFW_REPEAT:
         case GLFW_PRESS:
         {
+            w->input.setKeyPressed(key, true);
             KeyPressedEvent event = KeyPressedEvent(key);
             w->eventSystem.dispatch(event);
         }
@@ -67,6 +68,7 @@ void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 
         case GLFW_RELEASE:
         {
+            w->input.setKeyPressed(key, false);
             KeyReleasedEvent event = KeyReleasedEvent(key);
             w->eventSystem.dispatch(event);
         }
@@ -86,6 +88,7 @@ void OnMouseMoved(GLFWwindow* window, double x, double y)
 {
     Window* w = (Window*) glfwGetWindowUserPointer(window);
 
+    w->input.setMousePosition(x, y);
     MouseMovedEvent event = MouseMovedEvent(x, y);
     w->eventSystem.dispatch(event);
 }
@@ -99,6 +102,7 @@ void OnMouseButton(GLFWwindow* window, int button, int action, int mods)
         case GLFW_REPEAT:
         case GLFW_PRESS:
         {
+            w->input.setButtonPressed(button, true);
             MouseButtonPressedEvent event = MouseButtonPressedEvent(button);
             w->eventSystem.dispatch(event);
         }
@@ -106,6 +110,7 @@ void OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 
         case GLFW_RELEASE:
         {
+            w->input.setButtonPressed(button, false);
             MouseButtonReleasedEvent event = MouseButtonReleasedEvent(button);
             w->eventSystem.dispatch(event);
         }
@@ -228,7 +233,7 @@ Window::Window(const WindowSettings& settings)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, settings.glMajorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, settings.glMinorVersion);
     glfwWindowHint(GLFW_OPENGL_PROFILE, settings.glCoreProfile ? GLFW_OPENGL_CORE_PROFILE : GLFW_OPENGL_COMPAT_PROFILE);
-
+    glfwWindowHint(GLFW_SAMPLES, settings.multisampling);
     glfwWindowHint(GLFW_DECORATED, settings.decorated ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, settings.resizeable ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //enforce invisible creation and to delegate late initialization
@@ -248,6 +253,10 @@ Window::Window(const WindowSettings& settings)
 
     //Setup the GL Debug callback
     glDebugMessageCallback(opengl_message_callback, nullptr);
+
+    //Enable OpenGL multisampling capabilities
+    if (settings.multisampling)
+        glEnable(GL_MULTISAMPLE);
 
     //Show the OpenGL Context Info
     LogInfo("OpenGL Context Info\n"
@@ -284,7 +293,7 @@ Window::Window(const WindowSettings& settings)
 
     //Initialization finished, show the Window
     setVSync(settings.vsync);
-    show();
+    if (settings.visible) show();
 }
 
 Window::~Window()
@@ -362,6 +371,11 @@ unsigned int Window::getWidth() const
 unsigned int Window::getHeight() const
 {
     return height;
+}
+
+const Input& Window::inputs() const
+{
+    return input;
 }
 
 EventSystem& Window::events()

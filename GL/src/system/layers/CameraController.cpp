@@ -2,87 +2,65 @@
 
 #include "../../System.h"
 
-
-CameraController::CameraController(const Camera& camera) : camera(camera), dragging(false), pitch(camera.getRotation().x), yaw(camera.getRotation().y)
+CameraController::CameraController(const mat4& projectionMatrix, const vec3& position, const vec3& orientationDegrees)
+: Layer("Camera Controller"), camera(MakeRef<Camera>(projectionMatrix, position, orientationDegrees)), 
+dragging(false), pitch(orientationDegrees.x), yaw(orientationDegrees.y), speed(0.1), mouseSensitivity(0.5f)
 {
 }
 
+void CameraController::setSpeed(float speed)
+{
+    this->speed = speed;
+}
 
 void CameraController::onLoad()
 {
-    getWindow()->events().add<KeyPressedEvent>([&](const KeyPressedEvent& event)
-    {
-        //Forward
-        if (event.keycode == KEY_W) speed++;
-        if (event.keycode == KEY_S) speed--;
-        //Side
-        if (event.keycode == KEY_A) strafe--;
-        if (event.keycode == KEY_D) strafe++;
-    });
-
-    getWindow()->events().add<KeyReleasedEvent>([&](const KeyReleasedEvent& event)
-    {
-        //Forward
-        if (event.keycode == KEY_W) speed = 0;
-        if (event.keycode == KEY_S) speed = 0;
-        //Side
-        if (event.keycode == KEY_A) strafe = 0;
-        if (event.keycode == KEY_D) strafe = 0;
-    });
-
-    //Tracking System
-    getWindow()->events().add<MouseButtonPressedEvent>([&](const MouseButtonPressedEvent& event) { dragging = true; });
-    getWindow()->events().add<MouseButtonReleasedEvent>([&](const MouseButtonReleasedEvent& event) { dragging = false; });
-    getWindow()->events().add<MouseMovedEvent>([&](const MouseMovedEvent& event)
-    {
-        vec2 newMousePosition = vec2(event.x, event.y);
-        if (dragging)
-        {
-            vec2 dv = newMousePosition - lastMousePosition;
-            dv      *= 0.3f;
-            
-            yaw -= dv.x;
-            while (yaw > 360) yaw -= 360;
-            while (yaw <-360) yaw += 360;
-
-            pitch   -= dv.y;
-            //Clamp
-            if (pitch > 89) pitch = 89;
-            if (pitch < -89) pitch = -89;
-
-            camera.setRotation(pitch, yaw, 0);
-        }
-        lastMousePosition = newMousePosition;
-    });
+    vec2 windowSize = vec2(getWindow()->getWidth(), getWindow()->getHeight());
+    draggingPosition = windowSize / 2;
 }
-
 
 void CameraController::onRender(float deltaTime)
 {
-    float pRad = deg2rad * pitch;
-    float pcos = std::cos(pRad);
-    float psin = std::sin(pRad);
 
-    float yRad = deg2rad * yaw;
-    float ycos = std::cos(yRad);
-    float ysin = std::sin(yRad);
+    dragging = getWindow()->inputs().isButtonPressed(MOUSE_BUTTON_1);
 
-    mat4 rotation = mat4::RotationXYZ(camera.getRotation()).inverse();
+    vec2 mouse = getWindow()->inputs().getMousePosition();
+    if (dragging)
+    {
+        vec2 delta = draggingPosition - mouse;
+        yaw     += delta.x * mouseSensitivity;
+        pitch   += delta.y * mouseSensitivity;
 
-    vec3 forward = (rotation * vec3::Z) * speed;
-    vec3 left    = (rotation * vec3::X) * -strafe; // Y axis is inverted
+        camera->setRotation(pitch, yaw, 0);
+    }
+    draggingPosition = mouse;
 
-    LogDebug("Forward {0} {1} {2}", forward.x, forward.y, forward.z);
+    //Camera Translation movements
+    mat4 verticalRotation = mat4::RotationX(-pitch);
+    mat4 horizontalRotation = mat4::RotationY(-yaw);
 
-    camera.translate((forward + left) * deltaTime);
+    vec3 forward = verticalRotation * horizontalRotation * -vec3::Z;
+    vec3 right   = horizontalRotation * vec3::X;
+    vec3 up      = vec3::Y;
+    vec3 movementDirection = vec3(0);
+    if (getWindow()->inputs().isKeyPressed(KEY_W)) movementDirection += forward;
+    if (getWindow()->inputs().isKeyPressed(KEY_S)) movementDirection -= forward;
+    if (getWindow()->inputs().isKeyPressed(KEY_A)) movementDirection -= right;
+    if (getWindow()->inputs().isKeyPressed(KEY_D)) movementDirection += right;
+    if (getWindow()->inputs().isKeyPressed(KEY_SPACE)) movementDirection += up;
+    if (getWindow()->inputs().isKeyPressed(KEY_C)) movementDirection -= up;
+    movementDirection = movementDirection.normalize();
+    camera->translate(movementDirection * speed);
+
+    //Quick exit control
+    if (getWindow()->inputs().isKeyPressed(KEY_ESCAPE)) getWindow()->close();
 }
-
 
 void CameraController::onUnload()
 {
 }
 
-const Camera& CameraController::getCamera() const
+Ref<Camera> CameraController::getCamera() const
 {
     return camera; 
 }

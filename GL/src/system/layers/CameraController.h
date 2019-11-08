@@ -8,23 +8,25 @@
 class CameraController : public Layer
 {
 private:
-    Camera  camera;
-    float   speed;
-    float   strafe;
-    float   pitch;
-    float   yaw;
+    Ref<Camera> camera;
+    float mouseSensitivity;
+    float speed;
+    float pitch;
+    float yaw;
 
-    //Tracking system
+    //Mouse Dragging system
     bool    dragging;
-    vec2    lastMousePosition;
+    vec2    draggingPosition;
 
 
 public:
-    CameraController(const Camera& camera);
+    CameraController(const mat4& projectionMatrix, const vec3& position = vec3(), const vec3& orientationDegrees = vec3());
+
+    void setSpeed(float speed);
 
     virtual void onLoad() override;
     virtual void onUnload() override;
     virtual void onRender(float deltaTime) override;
 
-    const Camera& getCamera() const; 
+    Ref<Camera> getCamera() const;
 };

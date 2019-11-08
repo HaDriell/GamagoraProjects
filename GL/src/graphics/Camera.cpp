@@ -37,12 +37,14 @@ void Camera::setPosition(const vec3& position)
 
 vec3 Camera::getRotation() const
 {
-    return rotation;
+    return vec3(pitch, yaw, roll);
 }
 
 void Camera::setRotation(const vec3& rotationDegree)
 {
-    this->rotation = rotationDegree;
+    pitch   = rotationDegree.x;
+    yaw     = rotationDegree.y;
+    roll    = rotationDegree.z;
     viewMatrixComputed = false;
 }
 
@@ -55,6 +57,8 @@ void Camera::translate(const vec3& position)
 
 void Camera::rotate(const vec3& rotationDegree)
 {
-    this->rotation += rotationDegree;
+    pitch   += rotationDegree.x;
+    yaw     += rotationDegree.y;
+    roll    += rotationDegree.z;
     viewMatrixComputed = false;
 }

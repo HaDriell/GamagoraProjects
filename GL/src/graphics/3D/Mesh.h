@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include "../Common.h"
+#include "../../Common.h"
 
-#include "Buffer.h"
-#include "VertexArray.h"
+#include "../Buffer.h"
+#include "../VertexArray.h"
 
 
 struct MeshVertex
