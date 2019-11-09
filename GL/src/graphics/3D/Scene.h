@@ -17,7 +17,7 @@ private:
 
 public:
     void setTransform(const Transform& transform);
-    const Transform& getLocalTransform() const;
+    const Transform& getTransform() const;
 
     void setMesh(Ref<Mesh> mesh);
     Ref<Mesh> getMesh() const;
@@ -25,7 +25,6 @@ public:
     void setMaterial(Ref<Material> material);
     Ref<Material> getMaterial() const;
 };
-
 
 struct Scene : public Layer
 {

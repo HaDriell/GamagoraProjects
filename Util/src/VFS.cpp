@@ -17,14 +17,14 @@ void VFS::Unmount(const std::string& virtualPath)
 bool VFS::Exists(const std::string& physicalPath)
 {
     std::fstream file(physicalPath);
-    return file.good();
+    return file.is_open();
 }
 
 
 bool VFS::Resolve(const std::string& virtualPath, std::string& physicalPath)
 {
     //Empty path. Always fail.
-    if (virtualPath.empty()) 
+    if (virtualPath.empty())
         return false;
 
     if (virtualPath[0] == '/')

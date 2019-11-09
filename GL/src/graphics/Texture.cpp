@@ -67,11 +67,11 @@ void Texture2D::loadImage(const std::string& path, const TextureSettings& settin
         defineImage(loader.data(), loader.getWidth(), loader.getHeight(), TextureFormat::RGBA);
         defineSettings(settings);
         LogDebug("Texture2D loaded from Image file '{0}'.  Dimensions {1}x{2}.", path, loader.getWidth(), loader.getHeight());
-    } 
+    }
     else
     {
-        LogWarning("Failed to resolve Image file '{0}'.", path);
-    } 
+        LogWarning("Failed to load Image file '{0}'.", path);
+    }
 }
 
 void Texture2D::defineSettings(const TextureSettings& settings)
@@ -110,4 +110,61 @@ void Texture2D::unbind(unsigned int slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CubeMap Functions ///////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+CubeMap::CubeMap() : handle(0)
+{
+    glGenTextures(1, &handle);
+}
+
+CubeMap::~CubeMap()
+{
+    glDeleteTextures(1, &handle);
+}
+
+void CubeMap::loadEmpty(unsigned int size)
+{
+    glBindTexture(GL_TEXTURE_CUBE_MAP, handle);
+    for (int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, size, size, 0, GL_RGBA8, GL_UNSIGNED_BYTE, nullptr);
+    
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+void CubeMap::loadImages(const std::vector<std::string>& faces)
+{
+    glBindTexture(GL_TEXTURE_CUBE_MAP, handle);
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        ImageLoader loader;
+        if (loader.load(faces[i]))
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, loader.getWidth(), loader.getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, loader.data());   
+        }
+    }
+}
+
+unsigned int CubeMap::getSize() const 
+{ 
+    return size;
+}
+
+void CubeMap::bind(unsigned int slot) const
+{
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, handle);
+}
+
+void CubeMap::unbind(unsigned int slot) const
+{
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }

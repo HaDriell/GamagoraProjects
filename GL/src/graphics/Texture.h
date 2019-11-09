@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "../Common.h"
 
 enum TextureWrap
 {
@@ -54,6 +54,26 @@ public:
     void defineSettings(const TextureSettings& settings);
     void defineImage(const unsigned char* buffer, unsigned int width, unsigned int height, TextureFormat format);
     
+    void bind(unsigned int slot = 0) const;
+    void unbind(unsigned int slot = 0) const;
+};
+
+class CubeMap
+{
+private:
+    unsigned int handle;
+    //Dimensions of each side
+    unsigned int size;
+
+public:
+    CubeMap();
+    ~CubeMap();
+
+    unsigned int getSize() const;
+
+    void loadEmpty(unsigned int size);
+    void loadImages(const std::vector<std::string>& faces);
+
     void bind(unsigned int slot = 0) const;
     void unbind(unsigned int slot = 0) const;
 };

@@ -12,6 +12,7 @@ private:
 
 public:
     ImageLoader();
+    ~ImageLoader();
 
     unsigned int getWidth() const;
     unsigned int getHeight() const;

@@ -9,7 +9,7 @@ void Node::setTransform(const Transform& transform)
     this->transform = transform;
 }
 
-const Transform& Node::getLocalTransform() const
+const Transform& Node::getTransform() const
 {
     return transform;
 }
@@ -79,7 +79,7 @@ void Scene::onRender(float deltaTime)
         material->bind();
         material->setupCamera(*camera);
         material->setupLights(lights);
-        material->setupModelMatrix(node->getLocalTransform().getMatrix());
+        material->setupModelMatrix(node->getTransform().getMatrix());
         material->setupProperties();
 
         //Pipeline Setup & Draw Call

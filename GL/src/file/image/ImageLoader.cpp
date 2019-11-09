@@ -5,6 +5,10 @@ ImageLoader::ImageLoader() : buffer(nullptr), width(0), height(0)
 {
 }
 
+ImageLoader::~ImageLoader()
+{
+    if (buffer) delete[] buffer;
+}
 
 bool ImageLoader::onLoad(const std::string& path)
 {

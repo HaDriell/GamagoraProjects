@@ -144,6 +144,26 @@ int main()
     Scene scene = Scene(cameraController.getCamera());
     window->pushLayer(&scene);
 
+    //Load Textures2D here
+    {
+        LogDebug("File : {0}", VFS::Exists("res/textures/metal.png"));
+        LogDebug("File : {0}", VFS::Exists("res/textures/crate0/crate0_diffuse.png"));
+        Ref<Texture2D> loader;
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/metal.png");    Assets<Texture2D>::Add("metal", loader);
+
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate0/crate0_bump.png");      Assets<Texture2D>::Add("crate0_bump", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate0/crate0_diffuse.png");   Assets<Texture2D>::Add("crate0_diffuse", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate0/crate0_normal.png");    Assets<Texture2D>::Add("crate0_normal", loader);
+
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate1/crate1_bump.png");      Assets<Texture2D>::Add("crate1_bump", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate1/crate1_diffuse.png");   Assets<Texture2D>::Add("crate1_diffuse", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate1/crate1_normal.png");    Assets<Texture2D>::Add("crate1_normal", loader);
+
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate2/crate2_bump.png");      Assets<Texture2D>::Add("crate2_bump", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate2/crate2_diffuse.png");   Assets<Texture2D>::Add("crate2_diffuse", loader);
+        loader = MakeRef<Texture2D>();  loader->loadImage("res/textures/crate2/crate2_normal.png");    Assets<Texture2D>::Add("crate2_normal", loader);
+    }
+
     //Load Meshes here
     {
         Ref<Mesh> loader;
@@ -167,7 +187,8 @@ int main()
         {
             Ref<Node> node = MakeRef<Node>();
             //Setup Mesh
-            switch (IMesh(random))
+            int meshType = IMesh(random);
+            switch (meshType)
             {
                 case 0: node->setMesh(Assets<Mesh>::Find("bunny")); break;
                 case 1: node->setMesh(Assets<Mesh>::Find("cube")); break;
@@ -181,13 +202,22 @@ int main()
             vec4 specular = vec4(FColor(random), FColor(random), FColor(random), 1);
             float shininess = FShininess(random);
 
-            Ref<Material> material = MakeRef<PhongMaterial>(vec4(0), ambient, diffuse, specular, shininess);
+            Ref<PhongMaterial> material = MakeRef<PhongMaterial>(vec4(0), ambient, diffuse, specular, shininess);
+            if (meshType == 1) // cube type
+            {
+                std::uniform_int_distribution<int> ICrate(0, 2);
+                switch (ICrate(random))
+                {
+                case 0: material->setDiffuseMap(Assets<Texture2D>::Find("crate0_diffuse")); break;
+                case 1: material->setDiffuseMap(Assets<Texture2D>::Find("crate1_diffuse")); break;
+                case 2: material->setDiffuseMap(Assets<Texture2D>::Find("crate2_diffuse")); break;
+                }
+            }
             node->setMaterial(material);
 
             //Random Transform
             vec3 position = vec3(FPos(random), FPos(random), FPos(random));
             float scale   = FScale(random);
-            LogDebug("Node Positioned at {0} {1} {2} with scale {3}", position.x, position.y, position.z, scale);
 
             Transform transform;
             transform.setPosition(position);
