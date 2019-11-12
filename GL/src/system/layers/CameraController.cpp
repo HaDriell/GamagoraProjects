@@ -19,7 +19,7 @@ void CameraController::onLoad()
     draggingPosition = windowSize / 2;
 }
 
-void CameraController::onRender(float deltaTime)
+void CameraController::onUpdate(float deltaTime)
 {
 
     dragging = getWindow()->inputs().isButtonPressed(MOUSE_BUTTON_1);
@@ -50,6 +50,7 @@ void CameraController::onRender(float deltaTime)
     if (getWindow()->inputs().isKeyPressed(KEY_SPACE)) movementDirection += up;
     if (getWindow()->inputs().isKeyPressed(KEY_C)) movementDirection -= up;
     movementDirection = movementDirection.normalize();
+    
     camera->translate(movementDirection * speed);
 
     //Quick exit control

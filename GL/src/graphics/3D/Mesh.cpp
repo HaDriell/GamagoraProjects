@@ -70,6 +70,8 @@ void Mesh::loadOBJ(const std::string& path)
         }
         setVertices(vertices);
         setIndices(indices);
+        // computeNormals(); // Is already done when converting from the OBJLoader
+        computeTangents();
         LogDebug("Mesh loaded from File '{0}'. {1} Vertices. {2} Indices.", path, vertices.size(), indices.size());
     }
 }
@@ -96,42 +98,60 @@ void Mesh::setIndices(const std::vector<unsigned short>& indices)
     indexBuffer->defineData(this->indices);
 }
 
-void Mesh::setPositions(const std::vector<vec3>& positions)
+void Mesh::computeNormals()
 {
-    this->vertices.resize(positions.size());
-    for (unsigned int i = 0; i < positions.size(); i++)
+    for (unsigned int i = 2; i < indices.size(); i += 3)
     {
-        this->vertices[i].position = positions[i];
+        //Extract vertex indices
+        unsigned int index0 = indices[i - 2];
+        unsigned int index1 = indices[i - 1];
+        unsigned int index2 = indices[i - 0];
+        //Extract vertex Positions
+        vec3 vertex0 = vertices[index0].position;
+        vec3 vertex1 = vertices[index1].position;
+        vec3 vertex2 = vertices[index2].position;
+        //Compute Normal
+        vec3 edge1 = vertex1 - vertex0;
+        vec3 edge2 = vertex2 - vertex0;
+        vec3 normal = vec3::cross(edge1, edge2).normalize();
+        //Assign Normal to vertices
+        vertices[index0].normal = normal;
+        vertices[index1].normal = normal;
+        vertices[index2].normal = normal;
     }
-    vertexBuffer->defineData(this->vertices);
 }
 
-void Mesh::setNormals(const std::vector<vec3>& normals)
+void Mesh::computeTangents()
 {
-    this->vertices.resize(normals.size());
-    for (unsigned int i = 0; i < normals.size(); i++)
+    for (unsigned int i = 2; i < indices.size(); i += 3)
     {
-        this->vertices[i].normal = normals[i];
-    }
-    vertexBuffer->defineData(this->vertices);
-}
+        //Extract vertex indices
+        unsigned int index0 = indices[i - 2];
+        unsigned int index1 = indices[i - 1];
+        unsigned int index2 = indices[i - 0];
 
-void Mesh::setColors(const std::vector<vec3>& colors)
-{
-    this->vertices.resize(colors.size());
-    for (unsigned int i = 0; i < colors.size(); i++)
-    {
-        this->vertices[i].color = colors[i];
-    }
-    vertexBuffer->defineData(this->vertices);
-}
+        //Extract vertex Positions & UVs
+        MeshVertex& vertex0 = vertices[index0];
+        MeshVertex& vertex1 = vertices[index1];
+        MeshVertex& vertex2 = vertices[index2];
 
-void Mesh::setUVs(const std::vector<vec2>& uvs)
-{
-    this->vertices.resize(uvs.size());
-    for (unsigned int i = 0; i < uvs.size(); i++)
-    {
-        this->vertices[i].uv = uvs[i];
+        //Compute Edges
+        vec3 posEdge1 = vertex1.position - vertex0.position;
+        vec3 posEdge2 = vertex2.position - vertex0.position;
+        vec2 uvEdge1 = vertex1.uv - vertex0.uv;
+        vec2 uvEdge2 = vertex2.uv - vertex0.uv;
+
+        //Compute Tangent & Bitangent
+        float r = 1.0f / vec2::cross(uvEdge1, uvEdge2);
+        vec3 tangent    = ((posEdge1 * uvEdge2.y - posEdge2 * uvEdge1.y) * r).normalize();
+        vec3 bitangent  = ((posEdge2 * uvEdge1.x - posEdge1 * uvEdge2.x) * r).normalize();
+
+        //Assign them back to the vertex
+        vertex0.tangent = tangent;
+        vertex1.tangent = tangent;
+        vertex2.tangent = tangent;
+        vertex0.bitangent = bitangent;
+        vertex1.bitangent = bitangent;
+        vertex2.bitangent = bitangent;
     }
-    vertexBuffer->defineData(this->vertices);
 }

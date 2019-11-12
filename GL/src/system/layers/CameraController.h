@@ -26,7 +26,7 @@ public:
 
     virtual void onLoad() override;
     virtual void onUnload() override;
-    virtual void onRender(float deltaTime) override;
+    virtual void onUpdate(float deltaTime) override;
 
     Ref<Camera> getCamera() const;
 };

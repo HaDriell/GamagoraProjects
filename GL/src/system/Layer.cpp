@@ -31,6 +31,10 @@ void Layer::onUnload()
 {
 }
 
-void Layer::onRender(float deltaTime)
+void Layer::onUpdate(float deltaTime)
+{
+}
+
+void Layer::onRender()
 {
 }

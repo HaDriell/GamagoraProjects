@@ -63,7 +63,7 @@ void Scene::removeNode(Ref<Node> node)
     }
 }
 
-void Scene::onRender(float deltaTime)
+void Scene::onRender()
 {
     //Rendering
     for (Ref<Node>& node : nodes)

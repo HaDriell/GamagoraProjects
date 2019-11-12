@@ -30,5 +30,6 @@ public:
 
     virtual void onLoad();
     virtual void onUnload();
-    virtual void onRender(float deltaTime);
+    virtual void onUpdate(float deltaTime);
+    virtual void onRender();
 };

@@ -278,6 +278,10 @@ Window::Window(const WindowSettings& settings)
         mxOffset + (vidMode->width  - settings.width)  / 2,
         myOffset + (vidMode->height - settings.height) / 2);
 
+    //Initialize the Input manager
+    input.clearButtons();
+    input.clearKeys();
+
     //Window Events
     glfwSetWindowSizeCallback(handle,  OnWindowResized);
     glfwSetWindowPosCallback(handle,   OnWindowMoved);
@@ -318,22 +322,25 @@ Window::~Window()
 
 void Window::update()
 {
-    //Update GLFW3 Window
+    //Process User inputs
     glfwPollEvents();
-    glfwSwapBuffers(handle);
+
+    //Update Layers
+    float deltaTime = updateTimer.elapsed();
+    updateTimer.reset();
+    for (auto layer = layers.begin(); layer != layers.end(); layer++)
+        (*layer)->onUpdate(deltaTime);
 }
 
 void Window::render()
 {
-    //Refresh Update timer
-    float deltaTime = renderTimer.elapsed();
-    renderTimer.reset();
-
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //Render Layers
     for (auto layer = layers.begin(); layer != layers.end(); layer++)
     {
-        (*layer)->onRender(deltaTime); // trigger on unload
+        (*layer)->onRender(); // trigger on unload
     }
+    glfwSwapBuffers(handle);
 }
 
 void Window::pushLayer(Layer* layer)

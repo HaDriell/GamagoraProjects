@@ -42,5 +42,5 @@ public:
     void addNode(Ref<Node> node);
     void removeNode(Ref<Node> node);
 
-    void onRender(float deltaTime) override;
+    void onRender() override;
 };

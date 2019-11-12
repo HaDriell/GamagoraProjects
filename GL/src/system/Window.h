@@ -39,7 +39,7 @@ private:
     EventSystem eventSystem;
     std::vector<Layer*> layers;
 
-    Timer renderTimer;
+    Timer updateTimer;
     
 public:
     Window(const WindowSettings& settings = WindowSettings());
