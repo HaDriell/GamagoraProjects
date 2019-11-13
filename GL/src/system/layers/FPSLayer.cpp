@@ -15,7 +15,7 @@ FPSLayer::~FPSLayer()
     delete[] frameTime;
 }
 
-void FPSLayer::onRender(float deltaTime)
+void FPSLayer::onUpdate(float deltaTime)
 {
     frameTime[frameTimeIndex++] = deltaTime;
     if (frameTimeIndex >= frameTimeCapacity)

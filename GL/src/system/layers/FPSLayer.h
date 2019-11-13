@@ -17,5 +17,5 @@ private:
 public:
     FPSLayer(float fpsLogCooldown = 5.0f, unsigned int frameTimeCapacity = 60);
     ~FPSLayer();
-    virtual void onRender(float deltaTime) override;
+    virtual void onUpdate(float deltaTime) override;
 };
