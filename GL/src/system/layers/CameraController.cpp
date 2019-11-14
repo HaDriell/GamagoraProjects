@@ -8,6 +8,12 @@ dragging(false), pitch(orientationDegrees.x), yaw(orientationDegrees.y), speed(0
 {
 }
 
+
+void CameraController::setPitch(float pitch)
+{
+    this->pitch = pitch;
+}
+
 void CameraController::setSpeed(float speed)
 {
     this->speed = speed;

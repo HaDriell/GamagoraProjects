@@ -3,6 +3,20 @@
 #include <glad/glad.h>
 #include <iostream>
 
+std::string toStringOpenGLErrorCode(GLenum error)
+{
+    switch (error)
+    {
+        case GL_INVALID_ENUM:                   return "Invalid enum";
+        case GL_INVALID_VALUE:                  return "Invalid value";
+        case GL_INVALID_OPERATION:              return "Invalid operation";
+        case GL_INVALID_FRAMEBUFFER_OPERATION:  return "Invalid Framebuffer operation";
+        case GL_OUT_OF_MEMORY:                  return "Out of Memory";
+        case GL_STACK_UNDERFLOW:                return "Stack underflow";
+        case GL_STACK_OVERFLOW:                 return "Stack overflow";
+    }
+    return "";
+}
 
 GLenum toOpenGLBlendFactor(BlendingFactor factor)
 {
@@ -35,17 +49,27 @@ GLenum toOpenGLBlendMode(BlendingMode mode)
     return GL_FALSE;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Render Functions ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 RenderPipeline::RenderPipeline(bool depthTesting, bool blending, BlendingMode blendingMode, BlendingFactor sourceFactor, BlendingFactor destinationFactor, bool faceCulling)
 :   depthTesting(depthTesting), blending(blending), blendingMode(blendingMode), srcFactor(sourceFactor), dstFactor(destinationFactor), faceCulling(faceCulling)
 {
 }
 
-void Render::Debug()
+
+void Render::ClearError()
 {
-    unsigned int error = glGetError();
-    if (error != GL_NO_ERROR)
+    while (glGetError());
+}
+
+void Render::CheckError()
+{
+    unsigned int error;
+    while ((error = glGetError()) != GL_NO_ERROR)
     {
-        std::cout << "OpenGL Error("<< error << ")" << std::endl;
+        LogError("OpenGL Error ({0}) : {1}", error, toStringOpenGLErrorCode(error));
     }
 }
 
@@ -99,9 +123,13 @@ void Render::ClearColor(const vec4& color)
     glClearColor(color.x, color.y, color.z, color.w);
 }
 
-void Render::Clear()
+void Render::Clear(bool color, bool depth, bool stencil)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GLbitfield mask = 0;
+    if (color) mask |= GL_COLOR_BUFFER_BIT;
+    if (depth) mask |= GL_DEPTH_BUFFER_BIT;
+    if (stencil) mask |= GL_STENCIL_BUFFER_BIT;
+    glClear(mask);
 }
 
 void Render::DrawIndexed(const VertexArray& vertexArray, const IndexBuffer& indexBuffer)

@@ -20,6 +20,7 @@ struct WindowSettings
     bool decorated      = true;
     bool resizeable     = true;
     bool vsync          = true;
+    bool debug          = false;
 };
 
 

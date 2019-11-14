@@ -45,7 +45,8 @@ struct RenderPipeline
 class Render
 {
 public:
-    static void Debug();
+    static void ClearError();
+    static void CheckError();
 
     static void ConfigurePipeline(const RenderPipeline& pipeline);
 
@@ -53,7 +54,7 @@ public:
     static void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
 
     static void ClearColor(const vec4& color);
-    static void Clear();
+    static void Clear(bool color = true, bool depth = true, bool stencil = false);
 
     static void DrawIndexed(const VertexArray& vertexArray, const IndexBuffer&  indexBuffer);
 };

@@ -109,35 +109,7 @@ workspace "TP"
             "Glad"
         }
     
-        project "GLSandbox"
-        location "%{prj.name}"
-        language "C++"
-        architecture "x64"
-        kind "ConsoleApp"
-        cppdialect "gnu++17"
-        files {
-            "%{prj.name}/src/**"
-        }
-        includedirs {
-            "D:/msys64/mingw64/include",
-            "Math/src",
-            "Util/src",
-            "Glad/include",
-            "GL/src"
-        }
-        libdirs {
-            "D:/msys64/mingw64/lib"
-        }
-        links {
-            "GL",
-            "glfw3",
-            "freeimage",
-            "Math",
-            "Util",
-            "Glad"
-        }
-
-    project "Guibou"
+    project "GLSandbox"
         location "%{prj.name}"
         language "C++"
         architecture "x64"

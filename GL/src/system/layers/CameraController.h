@@ -22,6 +22,7 @@ private:
 public:
     CameraController(const mat4& projectionMatrix, const vec3& position = vec3(), const vec3& orientationDegrees = vec3());
 
+    void setPitch(float pitch);
     void setSpeed(float speed);
 
     virtual void onLoad() override;

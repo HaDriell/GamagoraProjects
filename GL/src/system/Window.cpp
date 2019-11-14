@@ -179,12 +179,12 @@ std::string toString_OpenGLSeverity(GLenum type)
 
 void opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
-    LogDebug("[{0}~{1}] ({2}) [{3}] : {4}",
+    LogDebug("{0} [{1}] ({2}) [{3}] : {4}",
         toString_OpenGLSource(source),
         toString_OpenGLType(type),
         id,
         toString_OpenGLSeverity(severity),
-        std::string_view(message, length)
+        std::string(message, length)
     );
 }
 
@@ -230,6 +230,7 @@ Window::Window(const WindowSettings& settings)
 
     glfwDefaultWindowHints();
     //OpenGL Context setup
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, settings.debug ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, settings.glMajorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, settings.glMinorVersion);
     glfwWindowHint(GLFW_OPENGL_PROFILE, settings.glCoreProfile ? GLFW_OPENGL_CORE_PROFILE : GLFW_OPENGL_COMPAT_PROFILE);
@@ -252,7 +253,8 @@ Window::Window(const WindowSettings& settings)
     glfwSetWindowUserPointer(handle, this);
 
     //Setup the GL Debug callback
-    glDebugMessageCallback(opengl_message_callback, nullptr);
+    if (settings.debug)
+        glDebugMessageCallback(opengl_message_callback, nullptr);
 
     //Enable OpenGL multisampling capabilities
     if (settings.multisampling)

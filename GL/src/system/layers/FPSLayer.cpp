@@ -1,7 +1,9 @@
 #include "FPSLayer.h"
 
-FPSLayer::FPSLayer(float fpsLogCooldown, unsigned int frameTimeCapacity) : Layer("FPSLayer"), 
-fpsLogCooldown(fpsLogCooldown), fpsLogAge(0.0f), frameTimeCapacity(frameTimeCapacity), frameTimeIndex(0)
+#include "../Window.h"
+
+FPSLayer::FPSLayer(const std::string& title, float fpsLogCooldown, unsigned int frameTimeCapacity) : Layer("FPSLayer"), 
+title(title), fpsLogCooldown(fpsLogCooldown), fpsLogAge(0.0f), frameTimeCapacity(frameTimeCapacity), frameTimeIndex(0)
 {
     frameTime = new float[frameTimeCapacity];
     for (int i = 0; i < frameTimeCapacity; i++)
@@ -34,7 +36,6 @@ void FPSLayer::onUpdate(float deltaTime)
         }
         averageFrameTime /= (float) frameTimeCapacity;
         float averageFrameFrequency = 1.0f / averageFrameTime;
-
-        LogDebug("Average frame time : {0}. Average FPS : {1}", averageFrameTime, averageFrameFrequency);
+        getWindow()->setTitle(title + " Average Frame time : " + std::to_string(averageFrameTime) + " FPS : " + std::to_string(averageFrameFrequency));
     }
 }

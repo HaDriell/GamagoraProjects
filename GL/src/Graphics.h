@@ -7,6 +7,7 @@
 #include "graphics/Texture.h"
 
 //Renderer Utils
+#include "graphics/Framebuffer.h"
 #include "graphics/Camera.h"
 #include "graphics/Render.h"
 #include "graphics/2D/Renderer2D.h"
