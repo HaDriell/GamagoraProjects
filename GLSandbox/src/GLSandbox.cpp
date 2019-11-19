@@ -31,14 +31,16 @@ struct Actor
 struct Light
 {
     vec3            position;
+    //vec3            direction;
     vec3            color;
     float           intensity;
 
     mat4            projection;
-    mat4            view;
     Framebuffer     framebuffer;
 
-    Light(unsigned int w, unsigned int h) : projection(mat4::PerspectiveFov(90, w, h, 0.1, 1000)), framebuffer(Framebuffer(w, h)) {}
+    Light(unsigned int w, unsigned int h) : 
+        projection(mat4::PerspectiveFov(90, w, h, 0.1, 1000)),
+        framebuffer(Framebuffer(w, h)) {}
 };
 
 //Represents the whole Stage
@@ -104,7 +106,7 @@ int main()
     stage.actors.back()->diffuseMap = Assets<Texture2D>::Find("crate0_diffuse");
 
     //push Lights
-    stage.lights.push_back(spawnLight(vec3(500, 20, 0), vec3(1), 1e4));
+    stage.lights.push_back(spawnLight(vec3(500, 20, 0), vec3(1), 1e2));
 
     //MainLoop
     Timer time;
@@ -129,6 +131,7 @@ Ref<Light> spawnLight(const vec3& position, const vec3& color, float intensity)
     light->position     = position;
     light->color        = color;
     light->intensity    = intensity;
+    light->framebuffer.getColorBuffer()->defineEmptyImage(TextureInternalFormat::R32F, light->framebuffer.getWidth(), light->framebuffer.getHeight());
 
     light->framebuffer.bind();
     if (!light->framebuffer.isComplete())
@@ -152,7 +155,7 @@ Ref<Actor> spawnActor(const std::string& meshName, const vec3& position, const v
     actor->specular     = vec4(0.3, 0.3, 0.3, 1);
     actor->shininess    = 300;
 
-    actor->mesh     = Assets<Mesh>::Find(meshName);
+    actor->mesh = Assets<Mesh>::Find(meshName);
     if (!actor->mesh)   LogError("Mesh '{0}' not found !", meshName);
 
     return actor;
@@ -217,12 +220,11 @@ void Stage::onRender()
 
         for (Ref<Light> light : lights)
         {
-            Camera camera = Camera(light->projection, light->position, vec3(-90, 0, 0));
-            shader->setUniform("ViewMatrix",         camera.getViewMatrix());
-            shader->setUniform("ProjectionMatrix",   camera.getProjectionMatrix());
-
-            light->view = camera.getViewMatrix();
-
+            //Fixed View straight down
+            mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
+            //Setup Light's "camera"
+            shader->setUniform("ViewMatrix", view);
+            shader->setUniform("ProjectionMatrix", light->projection);
             //Draw each Actor inside the Light Framebuffer
             light->framebuffer.bind();
             Render::Clear();
@@ -235,7 +237,6 @@ void Stage::onRender()
             light->framebuffer.unbind();
         }
     }
-
     
     //Phong pass
     {
@@ -266,6 +267,7 @@ void Stage::onRender()
             shader->setUniform("material.hasAmbientMap", (bool) actor->ambientMap);
             shader->setUniform("material.hasDiffuseMap", (bool) actor->diffuseMap);
             shader->setUniform("material.hasSpecularMap", (bool) actor->specularMap);
+            //Normal maps in 0 one day ?
             if (actor->emissiveMap) {   actor->emissiveMap->bind(1);    shader->setUniform("material.emissiveMap", 1); }
             if (actor->ambientMap) {    actor->ambientMap->bind(2);     shader->setUniform("material.ambientMap", 2); }
             if (actor->diffuseMap) {    actor->diffuseMap->bind(3);     shader->setUniform("material.diffuseMap", 3); }
@@ -285,11 +287,19 @@ void Stage::onRender()
                 for (int i = 0; i < lightCount; i++)
                 {
                     Ref<Light> light = lights[offset + i];
-                    std::string uniform = "pointLight[" + std::to_string(i) + "]";
-                    shader->setUniform(uniform + ".intensity", light->intensity);
-                    shader->setUniform(uniform + ".position",  light->position);
-                    shader->setUniform(uniform + ".color",     light->color);
-                    shader->setUniform("LightMatrix", light->projection * light->view);
+                    std::string lightUniform = "pointLight[" + std::to_string(i) + "]";
+                    shader->setUniform(lightUniform + ".intensity",  light->intensity);
+                    shader->setUniform(lightUniform + ".position",   light->position);
+                    shader->setUniform(lightUniform + ".color",      light->color);
+                    //Fixed View straight down
+                    mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
+                    //Shadow Mapping MVP setup
+                    shader->setUniform(lightUniform + ".projection", light->projection);
+                    shader->setUniform(lightUniform + ".view",       view);
+                    //ShadowMap Binding starts at Texture unit 5
+                    int textureUnit = 5 + i;
+                    light->framebuffer.getColorBuffer()->bind(textureUnit);
+                    shader->setUniform("shadowMap[" + std::to_string(i) + "]", textureUnit);
                 }
                 shader->setUniform("pointLightCount", lightCount);
                 offset += lightCount;
@@ -356,8 +366,15 @@ void Stage::onRender()
                     shader->setUniform(uniform + ".intensity", light->intensity);
                     shader->setUniform(uniform + ".position",  light->position);
                     shader->setUniform(uniform + ".color",     light->color);
-                    shader->setUniform("LightMatrix", light->projection * light->view);
-                    shader->setUniform("shadowTexelSize", vec2(1.0f / light->framebuffer.getWidth(), 1.0f / light->framebuffer.getHeight()));
+                    //Fixed View straight down
+                    mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
+                    //Shadow Mapping MVP setup
+                    shader->setUniform(uniform + ".projection", light->projection);
+                    shader->setUniform(uniform + ".view",       view);
+                    //ShadowMap Binding starts at Texture unit 5
+                    int textureUnit = 5 + i;
+                    light->framebuffer.getColorBuffer()->bind(textureUnit);
+                    shader->setUniform("shadowMap[" + std::to_string(i) + "]", textureUnit);
                 }
                 shader->setUniform("pointLightCount", lightCount);
                 offset += lightCount;

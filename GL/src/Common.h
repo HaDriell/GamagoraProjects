@@ -12,6 +12,7 @@
 
 //String integration
 #include <string>
+#include <cstring>
 #include <sstream>
 
 //Util integration
