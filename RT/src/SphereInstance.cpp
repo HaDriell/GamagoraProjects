@@ -41,6 +41,7 @@ HitResult SphereInstance::intersect(const vec3& position, const vec3& direction)
     float distance;
     vec3 hitPoint;
     vec3 normal;
+    hit.intersections++;
     if (intersectSphere(position, direction, unitSphere, distance, hitPoint, normal))
     {
         hit.hit = true;

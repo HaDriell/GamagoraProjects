@@ -7,6 +7,8 @@
 #include <System.h>
 #include <Graphics.h>
 
+#include "Profiling.h"
+
 //Represents a single Renderable object
 struct Actor
 {

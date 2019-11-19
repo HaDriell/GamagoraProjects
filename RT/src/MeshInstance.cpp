@@ -23,7 +23,7 @@ MeshInstance::~MeshInstance() {}
 HitResult MeshInstance::intersect(const vec3& position, const vec3& direction)
 {
     HitResult hit;
-    if (mesh.intersect(position, direction, hit.distance, hit.hitPoint, hit.normal))
+    if (mesh.intersect(position, direction, hit.distance, hit.hitPoint, hit.normal, hit.intersections))
     {
         hit.hit = true;
         hit.instance = this;

@@ -11,18 +11,17 @@ struct Instance;
 struct HitResult
 {
     bool            hit             = false;
-    unsigned long   intersections   = 1;
+    uint64_t        intersections   = 0;
     float           distance;
     vec3            hitPoint;
     vec3            normal;
     Instance*       instance;
 };
 
-
 struct Instance
 {
-    Transform transform;
-    Material material;
+    Transform   transform;
+    Material    material;
 
     HitResult hit(const vec3& position, const vec3& direction);
     bool hitBoundingBox(const vec3& position, const vec3& direction);

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "Timer.h"
+#include "Profiling.h"
 
 void normalize_vertices(std::vector<vec3>& vertices);
 
@@ -152,8 +152,9 @@ MeshBVH::MeshBVH(const std::vector<Triangle*>& triangles, int maxTriangles, int 
     }
 }
 
-bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
+bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal, uint64_t& intersections) const
 {
+    ++intersections;
     if (intersectAABB(position, direction, box))
     {
         float minimumDistance = std::numeric_limits<float>::max();
@@ -165,7 +166,7 @@ bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& dist
         vec3 currentNormal;
 
         //Hit left child
-        if (left && left->intersect(position, direction, currentDistance, currentHitPoint, currentNormal))
+        if (left && left->intersect(position, direction, currentDistance, currentHitPoint, currentNormal, intersections))
         {
             if (currentDistance < minimumDistance)
             {
@@ -176,7 +177,7 @@ bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& dist
         }
 
         //Hit right child
-        if (right && right->intersect(position, direction, currentDistance, currentHitPoint, currentNormal))
+        if (right && right->intersect(position, direction, currentDistance, currentHitPoint, currentNormal, intersections))
         {
             if (currentDistance < minimumDistance)
             {
@@ -189,6 +190,7 @@ bool MeshBVH::intersect(const vec3& position, const vec3& direction, float& dist
         //Hit Triangles
         for (Triangle* t : triangles)
         {
+            ++intersections;
             if (intersectTriangle(position, direction, *t, currentDistance, currentHitPoint, currentNormal))
             {
                 if (currentDistance < minimumDistance)
@@ -247,34 +249,32 @@ AABB Mesh::get_bounding_box() const
     return AABB();
 }
 
-bool Mesh::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal) const
+bool Mesh::intersect(const vec3& position, const vec3& direction, float& distance, vec3& hitPoint, vec3& normal, uint64_t& intersections) const
 {
 //Legacy render
-#if 0
+#if 1
+    //Debugging old way of doing things
+    distance = std::numeric_limits<float>::max();
+    float currentDistance;
+    vec3 currentHitPoint;
+    vec3 currentNormal;
+    for (Triangle* t : triangles)
     {
-        //Debugging old way of doing things
-        distance = std::numeric_limits<float>::max();
-        float currentDistance;
-        vec3 currentHitPoint;
-        vec3 currentNormal;
-        for (Triangle* t : triangles)
+        ++intersections;
+        if (intersectTriangle(position, direction, *t, currentDistance, currentHitPoint, currentNormal) && currentDistance < distance)
         {
-            if (intersectTriangle(position, direction, *t, currentDistance, currentHitPoint, currentNormal) && currentDistance < distance)
-            {
-                distance = currentDistance;
-                hitPoint = currentHitPoint;
-                normal = currentNormal;
-            }
+            distance = currentDistance;
+            hitPoint = currentHitPoint;
+            normal = currentNormal;
         }
-
-        return distance < std::numeric_limits<float>::max();
     }
-#else
 
+    return distance < std::numeric_limits<float>::max();
+#else
     if (!bvh)
         return false;
 
-    return bvh->intersect(position, direction, distance, hitPoint, normal);
+    return bvh->intersect(position, direction, distance, hitPoint, normal, intersections);
 #endif
 }
 
@@ -323,17 +323,11 @@ void Mesh::set(const std::vector<vec3> vertices)
         triangles.push_back(t);
     }
 
-    //Update metrics
-    metrics.triangleCount = triangles.size();
-
-    Timer bvhBuildTimer;
-    bvhBuildTimer.reset();
-
     //Compute BVH
-    bvh = new MeshBVH(triangles, 0);
-
-    //Update metrics
-    metrics.bvhBuildTime = bvhBuildTimer.elapsed();
+    {
+        PROFILE_SCOPE("BVH Build");
+        bvh = new MeshBVH(triangles, 0);
+    }
 }
 
 void Mesh::load_off_file(const std::string& path)

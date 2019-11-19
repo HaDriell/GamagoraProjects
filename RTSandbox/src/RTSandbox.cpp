@@ -1,9 +1,10 @@
+#include "MeshInstance.h"
 #include "Scene.h"
 #include <sstream>
 
 MeshInstance* createBlock(Scene& scene, float x, float y, float z, float gridSize)
 {
-    MeshInstance* block = scene.createOBJMesh("cube.obj");
+    MeshInstance* block = scene.createOBJMesh("res/cube.obj");
     block->transform.setScale(gridSize, gridSize, gridSize);
     block->transform.setPosition(x * gridSize, y * gridSize, z * gridSize);
     block->material = Material::Diffuse(1, 0.15, 0.15, 0.15);
@@ -14,12 +15,12 @@ int main()
 {
     Scene scene;
     scene.bias = 1e-2;
-    scene.pixel_sampling = 100;
+    scene.pixel_sampling = 10;
     scene.light_sampling = 1;
     scene.indirect_illumination_sampling = 1;
-    scene.ray_max_bounce = 2;
+    scene.ray_max_bounce = 5;
     scene.camera.fov = 60;
-    scene.camera.framebuffer.resize(256, 256);
+    scene.camera.framebuffer.resize(1024, 1024);
 
     //Camera positionning
     scene.camera.position = vec3(0, 0, -140);
@@ -53,18 +54,19 @@ int main()
     object->material |= Material::Diffuse(0.9, 1, 1, 1);
     object->material |= Material::Reflective(0.1);
 
-    //Small amount of triangles
-    object->mesh.load_obj_file("Love.obj");
+    object->mesh.load_obj_file("res/bunny_1k.obj");
     scene.render();
-    scene.camera.framebuffer.save("small.png");
+    scene.camera.framebuffer.save("out/bunny_1k.png");
 
-    //Medium amount of triangles
-    object->mesh.load_obj_file("bunny.obj");
+    object->mesh.load_obj_file("res/bunny_2k.obj");
     scene.render();
-    scene.camera.framebuffer.save("medium.png");
+    scene.camera.framebuffer.save("out/bunny_2k.png");
 
-    //Large amount of triangles
-    object->mesh.load_obj_file("armadillo.obj");
+    object->mesh.load_obj_file("res/bunny_16k.obj");
     scene.render();
-    scene.camera.framebuffer.save("large.png");
+    scene.camera.framebuffer.save("out/bunny_16k.png");
+    
+    object->mesh.load_obj_file("res/bunny_69k.obj");
+    scene.render();
+    scene.camera.framebuffer.save("out/bunny_69k.png");
 }

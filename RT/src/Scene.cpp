@@ -36,9 +36,6 @@ vec3 get_direct_surface_illumination(const Scene& scene, const HitResult& hit, s
 
 HitResult Scene::raycast(const vec3& position, const vec3& direction) const
 {
-    //Increment raycastCount
-    (*const_cast<unsigned long*>(&metrics.raycastCount))++;
-    
     HitResult hit;
     for (Instance* current : instances)
     {
@@ -48,6 +45,10 @@ HitResult Scene::raycast(const vec3& position, const vec3& direction) const
             hit = result;
         }
     }
+
+    //Notify metrics
+    metrics.raycastCount++;
+    metrics.intersectionCount += hit.intersections;
     return hit;
 }
 
@@ -123,7 +124,6 @@ vec3 get_direct_surface_illumination(const Scene& scene, const HitResult& hit, s
     return total;
 }
 
-
 vec3 trace(const Scene& scene, const vec3& position, const vec3& direction, unsigned int level, std::default_random_engine& entropy)
 {
     //Abort tracing above a certain amount of bounces
@@ -188,10 +188,7 @@ void Scene::render()
     metrics.raycastCount        = 0;
     metrics.instanceCount       = 0;
     metrics.intersectionCount   = 0;
-    metrics.imageRenderingTime  = 0;
 
-    Timer timer;
-    timer.reset();
     std::cout << "Rendering Scene. Please wait " << std::endl;    
     int progress = 0;
     for (unsigned int y = 0; y < camera.framebuffer.height; y++)
@@ -225,12 +222,10 @@ void Scene::render()
 
     //Update Scene metrics
     metrics.instanceCount       = instances.size();
-    metrics.imageRenderingTime  = timer.elapsed();
 
     std::cout << "Instances      : " << metrics.instanceCount << std::endl;
     std::cout << "Raycasts       : " << metrics.raycastCount << std::endl;
     std::cout << "Intersections  : " << metrics.intersectionCount << std::endl;
-    std::cout << "Rendering time : " << metrics.imageRenderingTime << std::endl;
 }
 
 Scene::~Scene()

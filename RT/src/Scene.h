@@ -11,16 +11,15 @@
 
 struct SceneMetrics
 {
-    unsigned long raycastCount      = 0;
-    unsigned long instanceCount     = 0;
-    unsigned long intersectionCount = 0;
-    float imageRenderingTime        = 0;
+    uint64_t raycastCount      = 0;
+    uint64_t instanceCount     = 0;
+    uint64_t intersectionCount = 0;
 };
 
 struct Scene
 {
     //Scene metrics
-    SceneMetrics    metrics;
+    mutable SceneMetrics    metrics;
 
     //Scene rendering configuration
     unsigned int    pixel_sampling = 10;

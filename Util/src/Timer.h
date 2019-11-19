@@ -4,13 +4,21 @@
 
 class Timer
 {
-    using Clock = std::chrono::high_resolution_clock;
+    using Clock     = std::chrono::high_resolution_clock;
     using Timestamp = Clock::time_point;
-    using Duration = std::chrono::duration<float>;
+    using Duration  = std::chrono::duration<float>;
 
     Timestamp anchor = Clock::now();
 
     public:
-        void reset();
-        float elapsed() const;
+        void reset()
+        {
+            anchor = Clock::now();
+        }
+
+        float elapsed() const
+        {
+            Duration duration = std::chrono::duration_cast<Duration>(Clock::now() - anchor);
+            return duration.count();
+        }
 };
