@@ -23,7 +23,7 @@ uniform mat4 ProjectionMatrix = mat4(1);
 void main()
 {
     vs_Position = vec3(ModelMatrix * vec4(Position, 1.0));
-    vs_Normal   = normalize(vec3(ModelMatrix * vec4(Normal,   0.0)));
+    vs_Normal   = normalize(vec3(ModelMatrix * vec4(Normal, 0.0)));
     vs_UV       = UV;
     gl_Position = ProjectionMatrix * ViewMatrix * ModelMatrix * vec4(Position, 1.0f);
 }
@@ -81,11 +81,11 @@ in vec2 vs_UV;
 out vec4 fs_Color;
 
 //Parameters
-uniform Material    material;
-uniform Camera      camera;
-uniform PointLight  pointLight[16];
-uniform sampler2D   shadowMap[16];
-uniform int         pointLightCount;
+uniform Material        material;
+uniform Camera          camera;
+uniform PointLight[16]  pointLight;
+uniform sampler2D[16]   shadowMap;
+uniform int             pointLightCount;
 
 vec4 GetMaterialEmissiveColor()
 {

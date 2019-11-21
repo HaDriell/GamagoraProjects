@@ -109,15 +109,29 @@ int main()
     stage.lights.push_back(spawnLight(vec3(500, 20, 0), vec3(1), 1e2));
 
     //MainLoop
+    std::default_random_engine random;
+    std::uniform_real_distribution<float> Float(0, 1);
+    bool lightSpawned = false;
     Timer time;
     while (!window->shouldClose())
     {
         Render::CheckError();
         window->update();
 
-        if (window->inputs().isKeyPressed(KEY_F))
+        if (window->inputs().isKeyPressed(KEY_R))
         {
             stage.lights.front()->position = stage.mainCamera->getPosition();
+        }
+
+        if (window->inputs().isKeyPressed(KEY_F))
+        {
+            if (!lightSpawned)
+            {
+                stage.lights.push_back(spawnLight(stage.mainCamera->getPosition(), vec3(Float(random), Float(random), Float(random)), 1e3));
+            }
+            lightSpawned = true;
+        } else {
+            lightSpawned = false;
         }
 
         window->render();
@@ -182,9 +196,11 @@ void loadTextures()
 void loadShaders()
 {
     Ref<Shader> shader;
-    shader = MakeRef<Shader>(); shader->compile("res/shaders/phong.glsl");      Assets<Shader>::Add("Phong", shader);   if (!shader->isValid()) shader->debug();
+    shader = MakeRef<Shader>(); shader->compile("res/shaders/phong.glsl");                  Assets<Shader>::Add("Phong", shader);   if (!shader->isValid()) shader->debug();
+    shader = MakeRef<Shader>(); shader->compile("res/shaders/phong-ambient-pass.glsl");     Assets<Shader>::Add("Phong-Ambient", shader); if (!shader->isValid()) shader->debug();
+    shader = MakeRef<Shader>(); shader->compile("res/shaders/phong-lighting-pass.glsl");    Assets<Shader>::Add("Phong-Lighting", shader); if (!shader->isValid()) shader->debug();
+
     shader = MakeRef<Shader>(); shader->compile("res/shaders/depth.glsl");      Assets<Shader>::Add("Depth", shader); if (!shader->isValid()) shader->debug();
-    shader = MakeRef<Shader>(); shader->compile("res/shaders/ambient.glsl");    Assets<Shader>::Add("Ambient", shader); if (!shader->isValid()) shader->debug();
     shader = MakeRef<Shader>(); shader->compile("res/shaders/texture.glsl");    Assets<Shader>::Add("Texture", shader); if (!shader->isValid()) shader->debug();
 }
 
@@ -240,72 +256,92 @@ void Stage::onRender()
     
     //Phong pass
     {
-        RenderPipeline pipeline;
-        pipeline.blending = true;
-        pipeline.blendingMode = BlendingMode::Add;
-        pipeline.depthTesting = true;
-        pipeline.faceCulling = true;
-        Render::ConfigurePipeline(pipeline);
-
-        //Camera setup
-        
-        Ref<Shader> shader = Assets<Shader>::Find("Phong");
-        shader->bind();
-
-        shader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
-        shader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
-        shader->setUniform("camera.position",  mainCamera->getPosition());
-
         Render::SetViewport(0, 0, getWindow()->getWidth(), getWindow()->getHeight());
-        for (Ref<Actor> actor : actors)
+        //Ambient Pass
         {
-            //Upload ModelMatrix
-            shader->setUniform("ModelMatrix", actor->transform.getMatrix());
-            
-            //Upload Phong properties
-            shader->setUniform("material.hasEmissiveMap", (bool) actor->emissiveMap);
-            shader->setUniform("material.hasAmbientMap", (bool) actor->ambientMap);
-            shader->setUniform("material.hasDiffuseMap", (bool) actor->diffuseMap);
-            shader->setUniform("material.hasSpecularMap", (bool) actor->specularMap);
-            //Normal maps in 0 one day ?
-            if (actor->emissiveMap) {   actor->emissiveMap->bind(1);    shader->setUniform("material.emissiveMap", 1); }
-            if (actor->ambientMap) {    actor->ambientMap->bind(2);     shader->setUniform("material.ambientMap", 2); }
-            if (actor->diffuseMap) {    actor->diffuseMap->bind(3);     shader->setUniform("material.diffuseMap", 3); }
-            if (actor->specularMap) {   actor->specularMap->bind(4);    shader->setUniform("material.specularMap", 4); }
-            shader->setUniform("material.emissive", actor->emissive);
-            shader->setUniform("material.ambient", actor->ambient);
-            shader->setUniform("material.diffuse", actor->diffuse);
-            shader->setUniform("material.specular", actor->specular);
-            shader->setUniform("material.shininess", actor->shininess);
+            Ref<Shader> ambientShader = Assets<Shader>::Find("Phong-Ambient");
+            ambientShader->bind();
 
-            //Repeat for each Light, in Batches of 32 Lights max
-            int offset = 0;
-            while (offset < lights.size())
+            RenderPipeline ambientPipeline;
+            ambientPipeline.blending = true;
+            ambientPipeline.blendingMode = BlendingMode::Add;
+            ambientPipeline.depthTesting = true;
+            ambientPipeline.faceCulling = true;
+            Render::ConfigurePipeline(ambientPipeline);
+
+            //Camera
+            ambientShader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
+            ambientShader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
+            for (Ref<Actor> actor : actors)
             {
-                //Batch using 32 Lights MAX per batch
-                int lightCount = std::min(32, (int) lights.size() - offset);
-                for (int i = 0; i < lightCount; i++)
+                //ModelMatrix
+                ambientShader->setUniform("ModelMatrix", actor->transform.getMatrix());
+                //Emissive
+                ambientShader->setUniform("material.emissive", actor->emissive);
+                ambientShader->setUniform("material.hasEmissiveMap", (bool) actor->emissiveMap);
+                if (actor->emissiveMap) {   actor->emissiveMap->bind(1);    ambientShader->setUniform("material.emissiveMap", 1); }
+                //Ambient
+                ambientShader->setUniform("material.ambient", actor->ambient);
+                ambientShader->setUniform("material.hasAmbientMap", (bool) actor->ambientMap);
+                if (actor->ambientMap) {    actor->ambientMap->bind(2);     ambientShader->setUniform("material.ambientMap", 2); }
+
+                //Draw Call
+                Render::DrawIndexed(*actor->mesh->getVertexArray(), *actor->mesh->getIndexBuffer());
+            }
+        }
+
+        //Lighting Passes (one per light)
+        {
+            Ref<Shader> lightingShader = Assets<Shader>::Find("Phong-Lighting");
+            lightingShader->bind();
+
+            RenderPipeline lightingPipeline;
+
+            lightingPipeline.faceCulling    = true;
+
+            lightingPipeline.depthWriting   = false;
+            lightingPipeline.depthTesting   = true;
+            lightingPipeline.depthTestMode  = DepthTestMode::Equal;
+
+            lightingPipeline.blending       = true;
+            lightingPipeline.blendingMode   = BlendingMode::Add;
+            lightingPipeline.srcFactor      = BlendingFactor::One;
+            lightingPipeline.dstFactor      = BlendingFactor::One; 
+            Render::ConfigurePipeline(lightingPipeline);
+
+
+            //Camera
+            lightingShader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
+            lightingShader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
+            for (Ref<Actor> actor : actors)
+            {
+                //ModelMatrix
+                lightingShader->setUniform("ModelMatrix", actor->transform.getMatrix());
+                //Diffuse
+                lightingShader->setUniform("material.diffuse", actor->diffuse);
+                lightingShader->setUniform("material.hasDiffuseMap", (bool) actor->diffuseMap);
+                if (actor->diffuseMap) {   actor->diffuseMap->bind(1);    lightingShader->setUniform("material.diffuseMap", 1); }
+                //Specular
+                lightingShader->setUniform("material.hasSpecularMap", (bool) actor->specularMap);
+                if (actor->specularMap) {   actor->specularMap->bind(2);    lightingShader->setUniform("material.specularMap", 2); }
+                lightingShader->setUniform("material.specular", actor->specular);
+                lightingShader->setUniform("material.shininess", actor->shininess);
+
+                for (Ref<Light> light : lights)
                 {
-                    Ref<Light> light = lights[offset + i];
-                    std::string lightUniform = "pointLight[" + std::to_string(i) + "]";
-                    shader->setUniform(lightUniform + ".intensity",  light->intensity);
-                    shader->setUniform(lightUniform + ".position",   light->position);
-                    shader->setUniform(lightUniform + ".color",      light->color);
+                    lightingShader->setUniform("light.intensity", light->intensity);
+                    lightingShader->setUniform("light.position",  light->position);
+                    lightingShader->setUniform("light.color",     light->color);
                     //Fixed View straight down
                     mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
-                    //Shadow Mapping MVP setup
-                    shader->setUniform(lightUniform + ".projection", light->projection);
-                    shader->setUniform(lightUniform + ".view",       view);
-                    //ShadowMap Binding starts at Texture unit 5
-                    int textureUnit = 5 + i;
-                    light->framebuffer.getColorBuffer()->bind(textureUnit);
-                    shader->setUniform("shadowMap[" + std::to_string(i) + "]", textureUnit);
+                    //Shadow Mapping
+                    lightingShader->setUniform("light.projection", light->projection);
+                    lightingShader->setUniform("light.view",       view);
+                    light->framebuffer.getColorBuffer()->bind(3);
+                    lightingShader->setUniform("light.shadowMap", 3);
+                    //Draw Call
+                    Render::DrawIndexed(*actor->mesh->getVertexArray(), *actor->mesh->getIndexBuffer());
                 }
-                shader->setUniform("pointLightCount", lightCount);
-                offset += lightCount;
-
-                //DrawCall
-                Render::DrawIndexed(*actor->mesh->getVertexArray(), *actor->mesh->getIndexBuffer());
             }
         }
     }
@@ -313,78 +349,105 @@ void Stage::onRender()
     
     //Phong pass in FBO
     Framebuffer phongFBO = Framebuffer(getWindow()->getWidth(), getWindow()->getHeight());
+    /*
     {
-        RenderPipeline pipeline;
-        pipeline.blending = true;
-        pipeline.blendingMode = BlendingMode::Add;
-        pipeline.depthTesting = true;
-        pipeline.faceCulling = true;
-        Render::ConfigurePipeline(pipeline);
-
-        //Camera setup
-        
-        Ref<Shader> shader = Assets<Shader>::Find("Phong");
-        shader->bind();
-
-        shader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
-        shader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
-        shader->setUniform("camera.position",  mainCamera->getPosition());
-
+        //Prepare FBO
         phongFBO.bind();
-        Render::Clear();
         Render::SetViewport(0, 0, phongFBO.getWidth(), phongFBO.getHeight());
-        for (Ref<Actor> actor : actors)
+        Render::Clear();
+
+
+        //Ambient Pass
         {
-            //Upload ModelMatrix
-            shader->setUniform("ModelMatrix", actor->transform.getMatrix());
-            
-            //Upload Phong properties
-            shader->setUniform("material.hasEmissiveMap", (bool) actor->emissiveMap);
-            shader->setUniform("material.hasAmbientMap", (bool) actor->ambientMap);
-            shader->setUniform("material.hasDiffuseMap", (bool) actor->diffuseMap);
-            shader->setUniform("material.hasSpecularMap", (bool) actor->specularMap);
-            if (actor->emissiveMap) {   actor->emissiveMap->bind(1);    shader->setUniform("material.emissiveMap", 1); }
-            if (actor->ambientMap) {    actor->ambientMap->bind(2);     shader->setUniform("material.ambientMap", 2); }
-            if (actor->diffuseMap) {    actor->diffuseMap->bind(3);     shader->setUniform("material.diffuseMap", 3); }
-            if (actor->specularMap) {   actor->specularMap->bind(4);    shader->setUniform("material.specularMap", 4); }
-            shader->setUniform("material.emissive", actor->emissive);
-            shader->setUniform("material.ambient", actor->ambient);
-            shader->setUniform("material.diffuse", actor->diffuse);
-            shader->setUniform("material.specular", actor->specular);
-            shader->setUniform("material.shininess", actor->shininess);
+            Ref<Shader> ambientShader = Assets<Shader>::Find("Phong-Ambient");
+            ambientShader->bind();
 
-            //Repeat for each Light, in Batches of 32 Lights max
-            int offset = 0;
-            while (offset < lights.size())
+            RenderPipeline ambientPipeline;
+            ambientPipeline.blending = true;
+            ambientPipeline.blendingMode = BlendingMode::Add;
+            ambientPipeline.depthTesting = true;
+            ambientPipeline.faceCulling = true;
+            Render::ConfigurePipeline(ambientPipeline);
+
+            //Camera
+            ambientShader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
+            ambientShader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
+            for (Ref<Actor> actor : actors)
             {
-                //Batch using 32 Lights MAX per batch
-                int lightCount = std::min(32, (int) lights.size() - offset);
-                for (int i = 0; i < lightCount; i++)
-                {
-                    Ref<Light> light = lights[offset + i];
-                    std::string uniform = "pointLight[" + std::to_string(i) + "]";
-                    shader->setUniform(uniform + ".intensity", light->intensity);
-                    shader->setUniform(uniform + ".position",  light->position);
-                    shader->setUniform(uniform + ".color",     light->color);
-                    //Fixed View straight down
-                    mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
-                    //Shadow Mapping MVP setup
-                    shader->setUniform(uniform + ".projection", light->projection);
-                    shader->setUniform(uniform + ".view",       view);
-                    //ShadowMap Binding starts at Texture unit 5
-                    int textureUnit = 5 + i;
-                    light->framebuffer.getColorBuffer()->bind(textureUnit);
-                    shader->setUniform("shadowMap[" + std::to_string(i) + "]", textureUnit);
-                }
-                shader->setUniform("pointLightCount", lightCount);
-                offset += lightCount;
+                //ModelMatrix
+                ambientShader->setUniform("ModelMatrix", actor->transform.getMatrix());
+                //Emissive
+                ambientShader->setUniform("material.emissive", actor->emissive);
+                ambientShader->setUniform("material.hasEmissiveMap", (bool) actor->emissiveMap);
+                if (actor->emissiveMap) {   actor->emissiveMap->bind(1);    ambientShader->setUniform("material.emissiveMap", 1); }
+                //Ambient
+                ambientShader->setUniform("material.ambient", actor->ambient);
+                ambientShader->setUniform("material.hasAmbientMap", (bool) actor->ambientMap);
+                if (actor->ambientMap) {    actor->ambientMap->bind(2);     ambientShader->setUniform("material.ambientMap", 2); }
 
-                //DrawCall
+                //Draw Call
                 Render::DrawIndexed(*actor->mesh->getVertexArray(), *actor->mesh->getIndexBuffer());
             }
         }
+
+        //Lighting Passes (one per light)
+        {
+            Ref<Shader> lightingShader = Assets<Shader>::Find("Phong-Lighting");
+            lightingShader->bind();
+
+            RenderPipeline lightingPipeline;
+
+            lightingPipeline.faceCulling    = true;
+
+            lightingPipeline.depthWriting   = false;
+            lightingPipeline.depthTesting   = true;
+            lightingPipeline.depthTestMode  = DepthTestMode::Equal;
+
+            lightingPipeline.blending       = true;
+            lightingPipeline.blendingMode   = BlendingMode::Add;
+            lightingPipeline.srcFactor      = BlendingFactor::One;
+            lightingPipeline.dstFactor      = BlendingFactor::One; 
+            Render::ConfigurePipeline(lightingPipeline);
+
+
+            //Camera
+            lightingShader->setUniform("ViewMatrix",       mainCamera->getViewMatrix());
+            lightingShader->setUniform("ProjectionMatrix", mainCamera->getProjectionMatrix());
+            for (Ref<Actor> actor : actors)
+            {
+                //ModelMatrix
+                lightingShader->setUniform("ModelMatrix", actor->transform.getMatrix());
+                //Diffuse
+                lightingShader->setUniform("material.diffuse", actor->diffuse);
+                lightingShader->setUniform("material.hasDiffuseMap", (bool) actor->diffuseMap);
+                if (actor->diffuseMap) {   actor->diffuseMap->bind(1);    lightingShader->setUniform("material.diffuseMap", 1); }
+                //Specular
+                lightingShader->setUniform("material.hasSpecularMap", (bool) actor->specularMap);
+                if (actor->specularMap) {   actor->specularMap->bind(2);    lightingShader->setUniform("material.specularMap", 2); }
+                lightingShader->setUniform("material.specular", actor->specular);
+                lightingShader->setUniform("material.shininess", actor->shininess);
+
+                for (Ref<Light> light : lights)
+                {
+                    lightingShader->setUniform("light.intensity", light->intensity);
+                    lightingShader->setUniform("light.position",  light->position);
+                    lightingShader->setUniform("light.color",     light->color);
+                    //Fixed View straight down
+                    mat4 view = mat4::Translation(-light->position) * mat4::RotationX(-90);
+                    //Shadow Mapping
+                    lightingShader->setUniform("light.projection", light->projection);
+                    lightingShader->setUniform("light.view",       view);
+                    light->framebuffer.getColorBuffer()->bind(3);
+                    lightingShader->setUniform("light.shadowMap", 3);
+                    //Draw Call
+                    Render::DrawIndexed(*actor->mesh->getVertexArray(), *actor->mesh->getIndexBuffer());
+                }
+            }
+        }
+
         phongFBO.unbind();
     }
+    //*/
 
     float width  = getWindow()->getWidth();
     float height = getWindow()->getHeight();

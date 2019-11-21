@@ -6,13 +6,8 @@
 // Phong Material Shader ///////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-const RenderPipeline PhongPipeline = RenderPipeline(
-        true, 
-        true, 
-        BlendingMode::Add,
-        BlendingFactor::SrcAlpha, 
-        BlendingFactor::OneMinusSrcAlpha, 
-        true);
+//TODO : THIS IS BROKEN, MUST INITIALIZE SOMEWHERE
+const RenderPipeline PhongPipeline;
 
 const std::string PhongShader = "PhongShader";
 

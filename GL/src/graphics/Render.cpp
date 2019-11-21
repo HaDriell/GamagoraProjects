@@ -18,6 +18,22 @@ std::string toStringOpenGLErrorCode(GLenum error)
     return "";
 }
 
+GLenum toOpenGLDepthTestMode(DepthTestMode mode)
+{
+    switch (mode)
+    {
+        case Always:            return GL_ALWAYS;
+        case Never:             return GL_NEVER;
+        case Equal:             return GL_EQUAL;
+        case NotEqual:          return GL_NOTEQUAL;
+        case Less:              return GL_LESS;
+        case LessOrEqual:       return GL_LEQUAL;
+        case Greater:           return GL_GREATER;
+        case GreaterOrEqual:    return GL_GEQUAL;
+    }
+    return GL_FALSE;
+}
+
 GLenum toOpenGLBlendFactor(BlendingFactor factor)
 {
     switch (factor)
@@ -53,12 +69,6 @@ GLenum toOpenGLBlendMode(BlendingMode mode)
 // Render Functions ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-RenderPipeline::RenderPipeline(bool depthTesting, bool blending, BlendingMode blendingMode, BlendingFactor sourceFactor, BlendingFactor destinationFactor, bool faceCulling)
-:   depthTesting(depthTesting), blending(blending), blendingMode(blendingMode), srcFactor(sourceFactor), dstFactor(destinationFactor), faceCulling(faceCulling)
-{
-}
-
-
 void Render::ClearError()
 {
     while (glGetError());
@@ -75,6 +85,19 @@ void Render::CheckError()
 
 void Render::ConfigurePipeline(const RenderPipeline& pipeline)
 {
+    //Depth Testing
+    glDepthMask(pipeline.depthWriting ? GL_TRUE : GL_FALSE);
+    if (!pipeline.depthTesting)
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(toOpenGLDepthTestMode(pipeline.depthTestMode));
+    }
+
+    //Color Blending
     if (!pipeline.blending)
     {
         glDisable(GL_BLEND);
@@ -86,15 +109,7 @@ void Render::ConfigurePipeline(const RenderPipeline& pipeline)
         glBlendFunc(toOpenGLBlendFactor(pipeline.srcFactor), toOpenGLBlendFactor(pipeline.dstFactor));
     }
 
-    if (!pipeline.depthTesting)
-    {
-        glDisable(GL_DEPTH_TEST);
-    }
-    else
-    {
-        glEnable(GL_DEPTH_TEST);
-    }
-
+    //Face Culling
     if (!pipeline.faceCulling)
     {
         glDisable(GL_CULL_FACE);

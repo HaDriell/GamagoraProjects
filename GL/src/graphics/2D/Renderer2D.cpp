@@ -9,7 +9,17 @@
 // Renderer2D Rendering Pipeline //////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const RenderPipeline R2DPipeline = RenderPipeline(false, true, BlendingMode::Add, BlendingFactor::SrcAlpha, BlendingFactor::OneMinusSrcAlpha, false);
+static RenderPipeline CreateR2DPipeline()
+{
+    RenderPipeline pipeline;
+    pipeline.blending = true;
+    pipeline.blendingMode = BlendingMode::Add;
+    pipeline.srcFactor = BlendingFactor::SrcAlpha;
+    pipeline.dstFactor = BlendingFactor::OneMinusSrcAlpha;
+    return pipeline;
+}
+
+const RenderPipeline R2DPipeline = CreateR2DPipeline();
 
 const BufferLayout R2DLayout = BufferLayout{
     { VertexAttributeType::Float2, "Position"   },

@@ -7,6 +7,14 @@
 #include "Shader.h"
 #include "VertexArray.h"
 
+enum DepthTestMode
+{
+    Always,     Never,
+    Equal,      NotEqual,
+    Less,       LessOrEqual,
+    Greater,    GreaterOrEqual,
+};
+
 enum BlendingFactor
 {
     Zero, One, 
@@ -24,21 +32,16 @@ enum BlendingMode
 struct RenderPipeline
 {
     //Depth Testing
-    bool            depthTesting;
+    bool            depthWriting    = true;
+    bool            depthTesting    = false;
+    DepthTestMode   depthTestMode   = DepthTestMode::Less;
     //Face culling (culls back face)
-    bool            faceCulling;
+    bool            faceCulling     = false;
     //Blending Configuration
-    bool            blending;
-    BlendingFactor  srcFactor;
-    BlendingFactor  dstFactor;
-    BlendingMode    blendingMode;
-
-    RenderPipeline( bool depthTesting = false, 
-                    bool blending = false, 
-                    BlendingMode blendingMode = BlendingMode::Add,
-                    BlendingFactor sourceFactor = BlendingFactor::One,
-                    BlendingFactor destinationFactor = BlendingFactor::Zero, 
-                    bool faceCulling = false);
+    bool            blending        = false;
+    BlendingFactor  srcFactor       = BlendingFactor::One;
+    BlendingFactor  dstFactor       = BlendingFactor::Zero;
+    BlendingMode    blendingMode    = BlendingMode::Add;
 };
 
 
