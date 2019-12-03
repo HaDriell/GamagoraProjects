@@ -59,5 +59,9 @@ public:
     static void ClearColor(const vec4& color);
     static void Clear(bool color = true, bool depth = true, bool stencil = false);
 
+
+    static void PointSize(float size);
+    static void DrawPoints(const VertexArray& vertexArray, int offset, int count);
     static void DrawIndexed(const VertexArray& vertexArray, const IndexBuffer&  indexBuffer);
+    static void Flush();
 };

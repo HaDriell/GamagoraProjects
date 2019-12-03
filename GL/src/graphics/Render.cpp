@@ -147,9 +147,26 @@ void Render::Clear(bool color, bool depth, bool stencil)
     glClear(mask);
 }
 
+void Render::PointSize(float size)
+{
+    glPointSize(size);
+}
+
+void Render::DrawPoints(const VertexArray& vertexArray, int offset, int count)
+{
+    vertexArray.bind();
+    glDrawArrays(GL_POINTS, offset, count);
+}
+
+
 void Render::DrawIndexed(const VertexArray& vertexArray, const IndexBuffer& indexBuffer)
 {
     vertexArray.bind();
     indexBuffer.bind();
     glDrawElements(GL_TRIANGLES, indexBuffer.getCount(), indexBuffer.getFormat(), nullptr);
+}
+
+void Render::Flush()
+{
+    glFlush();
 }
